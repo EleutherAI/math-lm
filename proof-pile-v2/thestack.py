@@ -3,6 +3,8 @@ from itertools import islice
 from tqdm import tqdm
 import os
 import json
+import sys
+from functools import reduce
 
 """
 Just as a reminder, here are the stack keys:
@@ -37,6 +39,8 @@ avg_line_length
 max_line_length
 alphanum_fraction
 """
+
+NUM_PROC=8
 
 SAVE_DIR = "stack-code"
 
@@ -75,7 +79,8 @@ def py_filter(example):
     for pack in packages: 
         keywords += [f"import {pack}", f"from {pack}"]
 
-    return any(keyword in text for keyword in keywords)
+    found = [x for x in keywords if x in text]
+    return found
 
 def c_filter(example): 
     text = example["content"]
@@ -85,7 +90,7 @@ def c_filter(example):
             "#include <cblas.h>"
             ]
 
-    found = [x for x in keywords if x in keywords]
+    found = [x for x in keywords if x in text]
     return found
 
 def cpp_filter(example): 
@@ -103,7 +108,7 @@ def cpp_filter(example):
             "#include <mtl"
             ]
 
-    found = [x for x in keywords if x in keywords]
+    found = [x for x in keywords if x in text]
     return found
 
 def tex_filter(text):
@@ -113,14 +118,16 @@ def tex_filter(text):
             "\\paragraph{"
             ]
 
-    found = [x for x in keywords if x in keywords]
+    found = [x for x in keywords if x in text]
     return found
-
 
 
 def main(): 
     stats = {}
     for lang in tqdm(DATA_DIRS): 
+        # debugging block
+        break
+
         ds = load_dataset("bigcode/the-stack", 
                 data_dir=f"data/{lang}", split="train")
 
@@ -139,32 +146,44 @@ def main():
     for lang in tqdm(DATA_DIRS_TO_FILTER): 
         print(lang.upper() + "#"*70)
 
-        ds = load_dataset("bigcode/the-stack", data_dir=f"data/{lang}", split="train")
-        unfiltered_size = ds.data.nbytes
+        print(f"loading {lang} data...")
+        ds = load_dataset("bigcode/the-stack", data_dir=f"data/{lang}", split="train", streaming=True)
+        # debugging block
+        print("truncating dataset for test runs...")
+        ds = ds.shuffle(seed=42, buffer_size=100).filter(
+                lambda _, i: i<10_000, with_indices=True
+                )
+
         if lang=="python": 
-            ds = ds.filter(py_filter)
+            ds = ds.filter(py_filter)#, num_proc=NUM_PROC)
         elif lang=="c":
-            ds = ds.filter(c_filter)
+            ds = ds.filter(c_filter)#, num_proc=NUM_PROC)
         elif lang=="c++":
-            ds = ds.filter(cpp_filter)
+            ds = ds.filter(cpp_filter)#, num_proc=NUM_PROC)
         elif lang=="tex": 
-            ds = ds.filter(tex_filter)
+            ds = ds.filter(tex_filter)#, num_proc=NUM_PROC)
         else: 
             raise Exception("DATA_DIRS_TO_FILTER and if statement not synced")
 
         for x in islice(ds, 1): 
             print(x["content"])
+        
+        print("calculating statistics...")
+        print("calculating dataset size...")
 
-        stats[lang] = {"files": len(ds), "size": ds.data.nbytes, 
-                "unfiltered_size": unfiltered_size}
+        # counts number of files and dataset byte size in one loop
+        files, size = reduce(lambda x, y: (x[0]+1, x[1]+y["size"]), ds, initializer=(0,0))
+
+        stats[lang] = {"files": files, "size": size,}
 
         print(stats[lang])
         
         print("saving to disk...")
         ds.save_to_disk(os.path.join(SAVE_DIR, f"{lang}.jsonl"))
 
-    with open(os.path.join(SAVE_DIR, "stats.json"), "w") as f: 
-        f.write(json.dumps(stats, indent=2))
+        print("saving stats to disk...")
+        with open(os.path.join(SAVE_DIR, "stats.json"), "w") as f: 
+            f.write(json.dumps(stats, indent=2))
 
 if __name__=="__main__": 
     main()
