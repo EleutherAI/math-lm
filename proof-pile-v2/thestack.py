@@ -3,7 +3,9 @@ from itertools import islice
 from tqdm import tqdm
 import os
 import json
+import ndjson
 import sys
+from pathlib import Path
 from functools import reduce
 
 """
@@ -41,6 +43,7 @@ alphanum_fraction
 """
 
 NUM_PROC=8
+SHARD_SIZE=10_000
 
 SAVE_DIR = "stack-code"
 
@@ -97,7 +100,7 @@ def cpp_filter(example):
     text = example["content"]
     keywords = [
             "#include <adept_arrays.h>", "#include <adept.h>",
-            # how alglib?
+            "#include <alglib", 
             "#include <boost"
             "#include <armadillo", 
             "#include <blitz", 
@@ -145,9 +148,11 @@ def main():
 
     for lang in tqdm(DATA_DIRS_TO_FILTER): 
         print(lang.upper() + "#"*70)
+        Path(os.path.join(SAVE_DIR, lang)).mkdir(exist_ok=True)
 
         print(f"loading {lang} data...")
         ds = load_dataset("bigcode/the-stack", data_dir=f"data/{lang}", split="train", streaming=True)
+
         # debugging block
         print("truncating dataset for test runs...")
         ds = ds.shuffle(seed=42, buffer_size=100).filter(
@@ -168,22 +173,47 @@ def main():
         for x in islice(ds, 1): 
             print(x["content"])
         
-        print("calculating statistics...")
-        print("calculating dataset size...")
 
         # counts number of files and dataset byte size in one loop
-        files, size = reduce(lambda x, y: (x[0]+1, x[1]+y["size"]), ds, initializer=(0,0))
+        # files, size = reduce(lambda x, y: (x[0]+1, x[1]+y["size"]), ds, initializer=(0,0))
+
+        print("calculating statistics and saving locally...")
+        files = 0 
+        size = 0 
+        shard = []
+        shard_count=0
+        for i, example in tqdm(enumerate(ds)):
+            files += 1
+            size += example["size"]
+            shard.append(example)
+
+            if i != 0 and i%SHARD_SIZE==0: 
+                shard_count += 1
+                print(f"saving shard {shard_count} to disk")
+                name = os.path.join(SAVE_DIR, lang, f"shard_{shard_count}.jsonl")
+                with open(name, "w") as f: 
+                    ndjson.dump(f, shard)
+                shard = []
+        if shard: 
+            shard_count += 1
+            print(f"saving shard {shard_count} to disk")
+            name = os.path.join(SAVE_DIR, lang, f"shard_{shard_count}.jsonl")
+            with open(name, "w") as f: 
+                ndjson.dump(f, shard)
+            shard = []
+
 
         stats[lang] = {"files": files, "size": size,}
 
         print(stats[lang])
         
-        print("saving to disk...")
-        ds.save_to_disk(os.path.join(SAVE_DIR, f"{lang}.jsonl"))
 
         print("saving stats to disk...")
         with open(os.path.join(SAVE_DIR, "stats.json"), "w") as f: 
             f.write(json.dumps(stats, indent=2))
+
+        # debugging block
+        break
 
 if __name__=="__main__": 
     main()
