@@ -6,5 +6,7 @@ This project contains the following directories
 - `proof-pile-v2`: scripts for downloading and preprocessing data. 
 - `task-finetunes`: scripts for fine-tuning models on task-specific datasets, such as MATH or GSM8k. 
 
+Model weights are stored on the Stability cluster and Huggingface. 
+
 In addition, this project makes contributions to
-[EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness), such as [PR376](https://github.com/EleutherAI/lm-evaluation-harness/pull/376). 
+[EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness), such as [PR no. 376](https://github.com/EleutherAI/lm-evaluation-harness/pull/376). 
