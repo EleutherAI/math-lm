@@ -5,6 +5,7 @@ import os
 import json
 import ndjson
 import sys
+import random
 from pathlib import Path
 from functools import reduce
 
@@ -43,7 +44,6 @@ alphanum_fraction
 """
 
 NUM_PROC=8
-SHARD_SIZE=10_000
 
 SAVE_DIR = "stack-code"
 
@@ -62,10 +62,10 @@ DATA_DIRS = [
 ]
 
 DATA_DIRS_TO_FILTER = [
-        "python", 
+        #"python", 
         "c", 
         "c++", 
-        "tex", 
+        #"tex", 
 ]
 
 def py_filter(example): 
@@ -131,7 +131,7 @@ def main():
         # debugging block
         break
 
-        ds = load_dataset("bigcode/the-stack", 
+        ds = load_dataset("bigcode/the-stack-dedup", 
                 data_dir=f"data/{lang}", split="train")
 
         print(lang.upper() + "#"*70)
@@ -144,29 +144,27 @@ def main():
         print(stats[lang])
         
         print("saving to disk...")
-        ds.save_to_disk(os.path.join(SAVE_DIR, f"{lang}.jsonl"))
+        ds.save_to_disk(os.path.join(SAVE_DIR, lang))
 
     for lang in tqdm(DATA_DIRS_TO_FILTER): 
         print(lang.upper() + "#"*70)
-        Path(os.path.join(SAVE_DIR, lang)).mkdir(exist_ok=True)
 
         print(f"loading {lang} data...")
-        ds = load_dataset("bigcode/the-stack", data_dir=f"data/{lang}", split="train", streaming=True)
+        ds = load_dataset("bigcode/the-stack-dedup", data_dir=f"data/{lang}", split="train")
 
         # debugging block
-        print("truncating dataset for test runs...")
-        ds = ds.shuffle(seed=42, buffer_size=100).filter(
-                lambda _, i: i<10_000, with_indices=True
-                )
-
+        # print("selecting samples from dataset (debugging)...")
+        # ds = ds.select(random.sample(range(len(ds)), k=10_000))
+        
+        print("filtering dataset...")
         if lang=="python": 
-            ds = ds.filter(py_filter)#, num_proc=NUM_PROC)
+            ds = ds.filter(py_filter, num_proc=NUM_PROC)
         elif lang=="c":
-            ds = ds.filter(c_filter)#, num_proc=NUM_PROC)
+            ds = ds.filter(c_filter, num_proc=NUM_PROC)
         elif lang=="c++":
-            ds = ds.filter(cpp_filter)#, num_proc=NUM_PROC)
+            ds = ds.filter(cpp_filter, num_proc=NUM_PROC)
         elif lang=="tex": 
-            ds = ds.filter(tex_filter)#, num_proc=NUM_PROC)
+            ds = ds.filter(tex_filter, num_proc=NUM_PROC)
         else: 
             raise Exception("DATA_DIRS_TO_FILTER and if statement not synced")
 
@@ -174,46 +172,23 @@ def main():
             print(x["content"])
         
 
-        # counts number of files and dataset byte size in one loop
-        # files, size = reduce(lambda x, y: (x[0]+1, x[1]+y["size"]), ds, initializer=(0,0))
-
-        print("calculating statistics and saving locally...")
-        files = 0 
-        size = 0 
-        shard = []
-        shard_count=0
-        for i, example in tqdm(enumerate(ds)):
-            files += 1
-            size += example["size"]
-            shard.append(example)
-
-            if i != 0 and i%SHARD_SIZE==0: 
-                shard_count += 1
-                print(f"saving shard {shard_count} to disk")
-                name = os.path.join(SAVE_DIR, lang, f"shard_{shard_count}.jsonl")
-                with open(name, "w") as f: 
-                    ndjson.dump(f, shard)
-                shard = []
-        if shard: 
-            shard_count += 1
-            print(f"saving shard {shard_count} to disk")
-            name = os.path.join(SAVE_DIR, lang, f"shard_{shard_count}.jsonl")
-            with open(name, "w") as f: 
-                ndjson.dump(f, shard)
-            shard = []
-
+        # counts number of files and dataset byte size in (two) loops
+        print("calculating dataset statistics...")
+        files = sum(1 for x in tqdm(ds))
+        size = sum(x["size"] for x in tqdm(ds))
 
         stats[lang] = {"files": files, "size": size,}
 
         print(stats[lang])
+
+        print("saving dataset to disk...")
+        ds.save_to_disk(os.path.join(SAVE_DIR, lang))
+
         
+    print("saving stats to disk...")
+    with open(os.path.join(SAVE_DIR, "stats.json"), "w") as f: 
+        f.write(json.dumps(stats, indent=2))
 
-        print("saving stats to disk...")
-        with open(os.path.join(SAVE_DIR, "stats.json"), "w") as f: 
-            f.write(json.dumps(stats, indent=2))
-
-        # debugging block
-        break
 
 if __name__=="__main__": 
     main()
