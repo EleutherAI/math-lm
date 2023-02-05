@@ -7,7 +7,8 @@ import ndjson
 import sys
 import random
 from pathlib import Path
-from functools import reduce
+from functools import reduce, partial
+from transformers import AutoTokenizer
 
 """
 Just as a reminder, here are the stack keys:
@@ -62,7 +63,7 @@ DATA_DIRS = [
 ]
 
 DATA_DIRS_TO_FILTER = [
-        #"python", 
+        "python", 
         "c", 
         "c++", 
         #"tex", 
@@ -124,29 +125,16 @@ def tex_filter(text):
     found = [x for x in keywords if x in text]
     return found
 
+def token_length(examples, tokenizer):
+    return {"neox_tokens": [len(x) for x in tokenizer(examples["content"])["input_ids"]]}
+
 
 def main(): 
     stats = {}
-    for lang in tqdm(DATA_DIRS): 
-        # debugging block
-        break
 
-        ds = load_dataset("bigcode/the-stack-dedup", 
-                data_dir=f"data/{lang}", split="train")
+    tokenizer = AutoTokenizer.from_pretrained("gpt-neox-20b")
 
-        print(lang.upper() + "#"*70)
-
-        for x in islice(ds, 1): 
-            print(x["content"])
-
-        stats[lang] = {"files": len(ds), "size": ds.data.nbytes }
-
-        print(stats[lang])
-        
-        print("saving to disk...")
-        ds.save_to_disk(os.path.join(SAVE_DIR, lang))
-
-    for lang in tqdm(DATA_DIRS_TO_FILTER): 
+    for lang in DATA_DIRS + DATA_DIRS_TO_FILTER: 
         print(lang.upper() + "#"*70)
 
         print(f"loading {lang} data...")
@@ -166,7 +154,12 @@ def main():
         elif lang=="tex": 
             ds = ds.filter(tex_filter, num_proc=NUM_PROC)
         else: 
-            raise Exception("DATA_DIRS_TO_FILTER and if statement not synced")
+            print("NO FILTERING APPLICABLE")
+
+        print("calculating tokens...")
+        ds = ds.map(partial(token_length, tokenizer=tokenizer), 
+            batched=True, num_proc=NUM_PROC,
+            )
 
         for x in islice(ds, 1): 
             print(x["content"])
@@ -176,18 +169,22 @@ def main():
         print("calculating dataset statistics...")
         files = sum(1 for x in tqdm(ds))
         size = sum(x["size"] for x in tqdm(ds))
+        tokens = sum(x["neox_tokens"] for x in tqdm(ds))
 
-        stats[lang] = {"files": files, "size": size,}
-
-        print(stats[lang])
+        stats_of_lang = {"files": files, "size": size, "neox_tokens": tokens}
+        
+        print('printing stats...')
+        print(stats_of_lang)
 
         print("saving dataset to disk...")
         ds.save_to_disk(os.path.join(SAVE_DIR, lang))
 
         
-    print("saving stats to disk...")
-    with open(os.path.join(SAVE_DIR, "stats.json"), "w") as f: 
-        f.write(json.dumps(stats, indent=2))
+        print("saving stats to disk...")
+        with open(os.path.join(SAVE_DIR, "stats.json"), "w") as f: 
+            stats = json.load(f)
+            stats[lang] = stats_of_lang
+            f.write(json.dumps(stats, indent=2))
 
 
 if __name__=="__main__": 
