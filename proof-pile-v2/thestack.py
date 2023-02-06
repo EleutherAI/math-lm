@@ -64,10 +64,10 @@ DATA_DIRS = [
 ]
 
 DATA_DIRS_TO_FILTER = [
-    "python",
-    "c",
-    "c++",
-    # "tex",
+    #"python",
+    #"c",
+    #"c++",
+    "tex",
 ]
 
 
