@@ -1,6 +1,62 @@
 {
+  "matlab": {
+    "files": 1046,
+    "size": 47973853,
+    "neox_tokens": 37972884
+  },
+  "julia": {
+    "files": 332174,
+    "size": 1751905383,
+    "neox_tokens": 669860604
+  },
+  "r": {
+    "files": 41580,
+    "size": 316489511,
+    "neox_tokens": 138512179
+  },
+  "sage": {
+    "files": 1930,
+    "size": 14832049,
+    "neox_tokens": 6338278
+  },
+  "mathematica": {
+    "files": 41260,
+    "size": 1877927466,
+    "neox_tokens": 919343374
+  },
+  "maple": {
+    "files": 2308,
+    "size": 26826063,
+    "neox_tokens": 13467809
+  },
+  "gap": {
+    "files": 1210,
+    "size": 12636526,
+    "neox_tokens": 5308085
+  },
+  "lean": {
+    "files": 21003,
+    "size": 162765045,
+    "neox_tokens": 69457192
+  },
+  "isabelle": {
+    "files": 5724,
+    "size": 98911734,
+    "neox_tokens": 39276152
+  },
   "python": {
     "files": 2353394,
-    "size": 21036642737
+    "size": 21036642737,
+    "neox_tokens": 6822733952
+  },
+  "c": {
+    "files": 6653,
+    "size": 67986750,
+    "neox_tokens": 25405804
+  },
+  "c++": {
+    "files": 26333,
+    "size": 262489988,
+    "neox_tokens": 92043868
   }
 }
