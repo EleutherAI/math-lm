@@ -1,4 +1,4 @@
-from datasets import load_dataset 
+from datasets import load_dataset
 from itertools import islice
 from tqdm import tqdm
 import os
@@ -44,148 +44,173 @@ max_line_length
 alphanum_fraction
 """
 
-NUM_PROC=8
+NUM_PROC = 8
 
 SAVE_DIR = "stack-code"
 
 DATA_DIRS = [
-        # numerical computing
-        "matlab", 
-        "julia", 
-        # CAS
-        "sage", 
-        "mathematica", 
-        "maple", 
-        "gap", 
-        # formal math
-        "lean", 
-        "isabelle", 
+    # numerical computing
+    "matlab",
+    "julia",
+    "r",
+    # CAS
+    "sage",
+    "mathematica",
+    "maple",
+    "gap",
+    # formal math
+    "lean",
+    "isabelle",
 ]
 
 DATA_DIRS_TO_FILTER = [
-        "python", 
-        "c", 
-        "c++", 
-        #"tex", 
+    "python",
+    "c",
+    "c++",
+    # "tex",
 ]
 
-def py_filter(example): 
+
+def py_filter(example):
     text = example["content"]
     keywords = []
     packages = [
-            "numpy", 
-            "scipy", 
-            "sympy", 
-            "sage", 
-            "numba", 
-            "numexpr" ,
-            ]
-    for pack in packages: 
+        "numpy",
+        "scipy",
+        "sympy",
+        "sage",
+        "numba",
+        "numexpr",
+    ]
+    for pack in packages:
         keywords += [f"import {pack}", f"from {pack}"]
 
     found = [x for x in keywords if x in text]
     return found
 
-def c_filter(example): 
+
+def c_filter(example):
     text = example["content"]
     keywords = [
-            "#include <fftw.h>", "#include <rfftw.h>", 
-            "#include <gsl", 
-            "#include <cblas.h>"
-            ]
+        "#include <fftw.h>",
+        "#include <rfftw.h>",
+        "#include <gsl",
+        "#include <cblas.h>",
+    ]
 
     found = [x for x in keywords if x in text]
     return found
 
-def cpp_filter(example): 
+
+def cpp_filter(example):
     text = example["content"]
     keywords = [
-            "#include <adept_arrays.h>", "#include <adept.h>",
-            "#include <alglib", 
-            "#include <boost"
-            "#include <armadillo", 
-            "#include <blitz", 
-            "#include <Eigen", 
-            "#include <deal.II", 
-            "#include <dlib", 
-            "#include <NTL", 
-            "#include <mtl"
-            ]
+        "#include <adept_arrays.h>",
+        "#include <adept.h>",
+        "#include <alglib",
+        "#include <boost" "#include <armadillo",
+        "#include <blitz",
+        "#include <Eigen",
+        "#include <deal.II",
+        "#include <dlib",
+        "#include <NTL",
+        "#include <mtl",
+    ]
 
     found = [x for x in keywords if x in text]
     return found
+
 
 def tex_filter(text):
     keywords = [
-            "\\section{", "\\section*{", "\\subsection{", "\\subsection*{", 
-            "\\subsubsection{", "\\subsubsection*{", "\\chapter{", "\\chapter*{", 
-            "\\paragraph{"
-            ]
+        "\\section{",
+        "\\section*{",
+        "\\subsection{",
+        "\\subsection*{",
+        "\\subsubsection{",
+        "\\subsubsection*{",
+        "\\chapter{",
+        "\\chapter*{",
+        "\\paragraph{",
+    ]
 
     found = [x for x in keywords if x in text]
     return found
 
+
 def token_length(examples, tokenizer):
-    return {"neox_tokens": [len(x) for x in tokenizer(examples["content"])["input_ids"]]}
+    return {
+        "neox_tokens": [len(x) for x in tokenizer(examples["content"])["input_ids"]]
+    }
 
 
-def main(): 
+def main():
     stats = {}
 
-    tokenizer = AutoTokenizer.from_pretrained("gpt-neox-20b")
+    tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
 
-    for lang in DATA_DIRS + DATA_DIRS_TO_FILTER: 
-        print(lang.upper() + "#"*70)
+    for lang in DATA_DIRS + DATA_DIRS_TO_FILTER:
+        print(lang.upper() + "#" * 70)
 
         print(f"loading {lang} data...")
-        ds = load_dataset("bigcode/the-stack-dedup", data_dir=f"data/{lang}", split="train")
+        ds = load_dataset(
+            "bigcode/the-stack-dedup", data_dir=f"data/{lang}", split="train"
+        )
 
         # debugging block
         # print("selecting samples from dataset (debugging)...")
         # ds = ds.select(random.sample(range(len(ds)), k=10_000))
-        
+
         print("filtering dataset...")
-        if lang=="python": 
+        if lang == "python":
             ds = ds.filter(py_filter, num_proc=NUM_PROC)
-        elif lang=="c":
+        elif lang == "c":
             ds = ds.filter(c_filter, num_proc=NUM_PROC)
-        elif lang=="c++":
+        elif lang == "c++":
             ds = ds.filter(cpp_filter, num_proc=NUM_PROC)
-        elif lang=="tex": 
+        elif lang == "tex":
             ds = ds.filter(tex_filter, num_proc=NUM_PROC)
-        else: 
+        else:
             print("NO FILTERING APPLICABLE")
 
         print("calculating tokens...")
-        ds = ds.map(partial(token_length, tokenizer=tokenizer), 
-            batched=True, num_proc=NUM_PROC,
-            )
+        ds = ds.map(
+            partial(token_length, tokenizer=tokenizer),
+            batched=True,
+            num_proc=NUM_PROC,
+        )
 
-        for x in islice(ds, 1): 
+        for x in islice(ds, 1):
             print(x["content"])
-        
 
-        # counts number of files and dataset byte size in (two) loops
+        # counts number of files and dataset byte size and tokens in single loop
         print("calculating dataset statistics...")
-        files = sum(1 for x in tqdm(ds))
-        size = sum(x["size"] for x in tqdm(ds))
-        tokens = sum(x["neox_tokens"] for x in tqdm(ds))
+        files, size, tokens = reduce(
+            lambda x, y: (x[0] + 1, x[1] + y["size"], x[2] + y["neox_tokens"]),
+            tqdm(ds),
+            (0, 0, 0),
+        )
 
         stats_of_lang = {"files": files, "size": size, "neox_tokens": tokens}
-        
-        print('printing stats...')
+
+        print("printing stats...")
         print(stats_of_lang)
 
         print("saving dataset to disk...")
         ds.save_to_disk(os.path.join(SAVE_DIR, lang))
 
-        
         print("saving stats to disk...")
-        with open(os.path.join(SAVE_DIR, "stats.json"), "w") as f: 
-            stats = json.load(f)
-            stats[lang] = stats_of_lang
+        stats_path = os.path.join(SAVE_DIR, "stats.json")
+        if os.path.isfile(stats_path):
+            with open(stats_path) as f:
+                stats = json.load(f)
+        else:
+            stats = dict()
+
+        stats[lang] = stats_of_lang
+        with open(stats_path, "w") as f:
             f.write(json.dumps(stats, indent=2))
 
 
-if __name__=="__main__": 
+if __name__ == "__main__":
     main()
