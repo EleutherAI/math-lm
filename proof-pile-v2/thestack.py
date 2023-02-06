@@ -108,7 +108,8 @@ def cpp_filter(example):
         "#include <adept_arrays.h>",
         "#include <adept.h>",
         "#include <alglib",
-        "#include <boost" "#include <armadillo",
+        "#include <boost",
+        "#include <armadillo",
         "#include <blitz",
         "#include <Eigen",
         "#include <deal.II",
@@ -121,17 +122,26 @@ def cpp_filter(example):
     return found
 
 
-def tex_filter(text):
+def tex_filter(example):
+    if example["ext"] != "tex": 
+        return False 
+
+    text = example["content"]
+
+    if "gnuplot" in text: 
+        return False 
+
     keywords = [
+        "\\chapter{",
+        "\\chapter*{",
         "\\section{",
         "\\section*{",
         "\\subsection{",
         "\\subsection*{",
         "\\subsubsection{",
         "\\subsubsection*{",
-        "\\chapter{",
-        "\\chapter*{",
         "\\paragraph{",
+        "\\subparagraph{"
     ]
 
     found = [x for x in keywords if x in text]
