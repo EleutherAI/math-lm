@@ -149,7 +149,7 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
 
-    for lang in DATA_DIRS + DATA_DIRS_TO_FILTER:
+    for lang in DATA_DIRS_TO_FILTER:
         print(lang.upper() + "#" * 70)
 
         print(f"loading {lang} data...")
