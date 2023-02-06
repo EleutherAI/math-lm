@@ -1,4 +1,5 @@
 # Don't save training data
+proof-pile-v2/stack-code/*/
 *.jsonl
 *.hf
 
