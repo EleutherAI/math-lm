@@ -50,24 +50,24 @@ SAVE_DIR = "stack-code"
 
 DATA_DIRS = [
     # numerical computing
-    "matlab",
-    "julia",
-    "r",
+    #"matlab",
+    #"julia",
+    #"r",
     # CAS
     "sage",
-    "mathematica",
-    "maple",
-    "gap",
+    #"mathematica",
+    #"maple",
+    #"gap",
     # formal math
     "lean",
-    "isabelle",
+    #"isabelle",
 ]
 
 DATA_DIRS_TO_FILTER = [
     #"python",
     #"c",
     #"c++",
-    "tex",
+    #"tex",
 ]
 
 
@@ -153,13 +153,22 @@ def token_length(examples, tokenizer):
         "neox_tokens": [len(x) for x in tokenizer(examples["content"])["input_ids"]]
     }
 
+def batch_loader(ds, size):
+    """
+    Iterator that takes in a list `seq` and returns
+    chunks of size `size` """
+    for pos in range(0, len(ds), size):
+        if pos + size < len(ds): 
+            yield [x for x in ds.select(list(range(pos, pos+size)))]
+        else: 
+            yield [x for x in ds.select(list(range(pos, len(ds))))]
 
 def main():
     stats = {}
 
     tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
 
-    for lang in DATA_DIRS_TO_FILTER:
+    for lang in DATA_DIRS + DATA_DIRS_TO_FILTER:
         print(lang.upper() + "#" * 70)
 
         print(f"loading {lang} data...")
@@ -206,8 +215,13 @@ def main():
         print("printing stats...")
         print(stats_of_lang)
 
-        print("saving dataset to disk...")
-        ds.save_to_disk(os.path.join(SAVE_DIR, lang))
+        print("saving dataset to disk in batches...")
+        save_lang = os.path.join(SAVE_DIR, lang)
+        Path(save_lang).mkdir(parents=True, exist_ok=True)
+        for i, batch in tqdm(enumerate(batch_loader(ds, 100_000))): 
+            with open(os.path.join(save_lang, str(i).zfill(7) + ".jsonl"), "w") as f:
+                ndjson.dump(batch, f)
+
 
         print("saving stats to disk...")
         stats_path = os.path.join(SAVE_DIR, "stats.json")
@@ -220,6 +234,7 @@ def main():
         stats[lang] = stats_of_lang
         with open(stats_path, "w") as f:
             f.write(json.dumps(stats, indent=2))
+
 
 
 if __name__ == "__main__":
