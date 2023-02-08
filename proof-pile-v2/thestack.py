@@ -50,16 +50,16 @@ SAVE_DIR = "stack-code"
 
 DATA_DIRS = [
     # numerical computing
-    #"matlab",
+    "matlab",
     #"julia",
-    #"r",
+    "r",
     # CAS
-    "sage",
-    #"mathematica",
-    #"maple",
+    #"sage",
+    "mathematica",
+    "maple",
     #"gap",
     # formal math
-    "lean",
+    #"lean",
     #"isabelle",
 ]
 
@@ -67,9 +67,23 @@ DATA_DIRS_TO_FILTER = [
     #"python",
     #"c",
     #"c++",
-    #"tex",
+    "tex",
 ]
 
+def matlab_rexp(example, rexp):
+    return bool(rexp.search(example["content"]))
+
+h = re.compile('[a-df-zA-Z]')
+matlab_filter = partial(matlab_rexp, rexp=h)
+
+def r_filter(example): 
+    return "/* Resource fork" not in example["content"]
+
+def mathematica_filter(example): 
+    return example["max_stars_repo_name"] != "dendaxD/QAOA-MaxCut-amplitudes"
+
+def maple_filter(example): 
+    return "<?xml" != example["content"][:5]
 
 def py_filter(example):
     text = example["content"]
@@ -122,11 +136,17 @@ def cpp_filter(example):
     return found
 
 
-def tex_filter(example):
+def tex_filter_rexp(example, rexp):
     if example["ext"] != "tex": 
         return False 
 
+    if "latex/" in example["max_stars_repo_path"]:
+        return False 
+
     text = example["content"]
+
+    if rexp.search(text): 
+        return False 
 
     if "gnuplot" in text: 
         return False 
@@ -145,7 +165,10 @@ def tex_filter(example):
     ]
 
     found = [x for x in keywords if x in text]
-    return found
+    return bool(found)
+
+h = re.compile("[\u0370-\u18aA\u3000-\U0001047f]")
+tex_filter = partial(tex_filter_rexp, rexp=h)
 
 
 def token_length(examples, tokenizer):
@@ -181,7 +204,15 @@ def main():
         # ds = ds.select(random.sample(range(len(ds)), k=10_000))
 
         print("filtering dataset...")
-        if lang == "python":
+        if lang=="matlab":
+            ds = ds.filter(matlab_filter, num_proc=NUM_PROC)
+        elif lang=="r":
+            ds = ds.filter(r_filter, num_proc=NUM_PROC)
+        elif lang=="mathematica":
+            ds = ds.filter(mathematica_filter, num_proc=NUM_PROC)
+        elif lang=="maple":
+            ds = ds.filter(maple_filter, num_proc=NUM_PROC)
+        elif lang == "python":
             ds = ds.filter(py_filter, num_proc=NUM_PROC)
         elif lang == "c":
             ds = ds.filter(c_filter, num_proc=NUM_PROC)
@@ -217,9 +248,11 @@ def main():
 
         print("saving dataset to disk in batches...")
         save_lang = os.path.join(SAVE_DIR, lang)
+        if Path(save_lang).exists():
+            shutil.rmtree(save_lang)
         Path(save_lang).mkdir(parents=True, exist_ok=True)
         for i, batch in tqdm(enumerate(batch_loader(ds, 100_000))): 
-            with open(os.path.join(save_lang, str(i).zfill(7) + ".jsonl"), "w") as f:
+            with open(os.path.join(save_lang, str(i).zfill(3) + ".jsonl"), "w") as f:
                 ndjson.dump(batch, f)
 
 
