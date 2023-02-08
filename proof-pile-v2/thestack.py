@@ -45,29 +45,29 @@ alphanum_fraction
 """
 
 NUM_PROC = 8
-
+SAVE_BATCH_SIZE
 SAVE_DIR = "stack-code"
 
 DATA_DIRS = [
     # numerical computing
-    #"matlab",
-    #"julia",
-    #"r",
+    "matlab",
+    "julia",
+    "r",
     # CAS
     "sage",
-    #"mathematica",
-    #"maple",
-    #"gap",
+    "mathematica",
+    "maple",
+    "gap",
     # formal math
     "lean",
-    #"isabelle",
+    "isabelle",
 ]
 
 DATA_DIRS_TO_FILTER = [
-    #"python",
-    #"c",
-    #"c++",
-    #"tex",
+    "python",
+    "c",
+    "c++",
+    "tex",
 ]
 
 
@@ -123,13 +123,13 @@ def cpp_filter(example):
 
 
 def tex_filter(example):
-    if example["ext"] != "tex": 
-        return False 
+    if example["ext"] != "tex":
+        return False
 
     text = example["content"]
 
-    if "gnuplot" in text: 
-        return False 
+    if "gnuplot" in text:
+        return False
 
     keywords = [
         "\\chapter{",
@@ -141,7 +141,7 @@ def tex_filter(example):
         "\\subsubsection{",
         "\\subsubsection*{",
         "\\paragraph{",
-        "\\subparagraph{"
+        "\\subparagraph{",
     ]
 
     found = [x for x in keywords if x in text]
@@ -153,15 +153,17 @@ def token_length(examples, tokenizer):
         "neox_tokens": [len(x) for x in tokenizer(examples["content"])["input_ids"]]
     }
 
+
 def batch_loader(ds, size):
     """
     Iterator that takes in a list `seq` and returns
-    chunks of size `size` """
+    chunks of size `size`"""
     for pos in range(0, len(ds), size):
-        if pos + size < len(ds): 
-            yield [x for x in ds.select(list(range(pos, pos+size)))]
-        else: 
+        if pos + size < len(ds):
+            yield [x for x in ds.select(list(range(pos, pos + size)))]
+        else:
             yield [x for x in ds.select(list(range(pos, len(ds))))]
+
 
 def main():
     stats = {}
@@ -218,10 +220,12 @@ def main():
         print("saving dataset to disk in batches...")
         save_lang = os.path.join(SAVE_DIR, lang)
         Path(save_lang).mkdir(parents=True, exist_ok=True)
-        for i, batch in tqdm(enumerate(batch_loader(ds, 100_000))): 
+        for i, batch in tqdm(
+            enumerate(batch_loader(ds, SAVE_BATCH_SIZE)),
+            total=len(ds) // SAVE_BATCH_SIZE + 1,
+        ):
             with open(os.path.join(save_lang, str(i).zfill(7) + ".jsonl"), "w") as f:
                 ndjson.dump(batch, f)
-
 
         print("saving stats to disk...")
         stats_path = os.path.join(SAVE_DIR, "stats.json")
@@ -234,7 +238,6 @@ def main():
         stats[lang] = stats_of_lang
         with open(stats_path, "w") as f:
             f.write(json.dumps(stats, indent=2))
-
 
 
 if __name__ == "__main__":
