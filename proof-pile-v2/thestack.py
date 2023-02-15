@@ -6,7 +6,9 @@ import json
 import ndjson
 import sys
 import random
+import re
 from pathlib import Path
+import shutil
 from functools import reduce, partial
 from transformers import AutoTokenizer
 
@@ -44,19 +46,19 @@ max_line_length
 alphanum_fraction
 """
 
-NUM_PROC = 8
-SAVE_BATCH_SIZE
+NUM_PROC = 10
+SAVE_BATCH_SIZE = 100_000
 SAVE_DIR = "stack-code"
 
 DATA_DIRS = [
     # numerical computing
-    "matlab",
+    #"matlab",
     #"julia",
-    "r",
+    #"r",
     # CAS
     #"sage",
-    "mathematica",
-    "maple",
+    #"mathematica",
+    #"maple",
     #"gap",
     # formal math
     #"lean",
@@ -65,9 +67,10 @@ DATA_DIRS = [
 
 DATA_DIRS_TO_FILTER = [
     #"python",
+    "jupyter-notebook"
     #"c",
     #"c++",
-    "tex",
+    #"tex",
 ]
 
 def matlab_rexp(example, rexp):
