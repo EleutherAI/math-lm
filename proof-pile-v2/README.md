@@ -13,7 +13,7 @@ The stack is processed in `./thestack.py`
 - Issue: .sage files tend to have a bunch of long strings of hardcode numbers. Is this ok? e.g `ClathomasPrime/CompetitiveStableMatching:Plotting/plots.sage`
 - Issue: Wolfram mathematica has three file formats:`.wls`: Wolfram language script, handled ok; `.m`Wolfram language package, handled ok; `.nb`: notebook, the plaintext has a bunch of noise. Need to export as `.wls`. 
     - [ ] Fix: convert notebooks to tex or wls
-- Issue: There is one mathematica repo, `dendaxD/QAOA-MaxCut-amplitudes`, that contains about half of all mathematica files in the stack. All these files are extremely similar and should be included on data diversity grounds
+- Issue: There is one mathematica repo, `dendaxD/QAOA-MaxCut-amplitudes`, that contains about half of all mathematica files in the stack. All these files are extremely similar and should be excluded on data diversity grounds
     - [x] Fix: repo manually deleted in `mathematica_filter()`. 
 - Issue: Some maple files are actually xml
     - [x] Fix: `maple_filte()` removes xml. 
