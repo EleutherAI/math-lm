@@ -1,8 +1,8 @@
 {
   "matlab": {
-    "files": 1046,
-    "size": 47973853,
-    "neox_tokens": 37972884
+    "files": 111,
+    "size": 285330,
+    "neox_tokens": 116790
   },
   "julia": {
     "files": 332174,
@@ -10,9 +10,9 @@
     "neox_tokens": 669860604
   },
   "r": {
-    "files": 41580,
-    "size": 316489511,
-    "neox_tokens": 138512179
+    "files": 40925,
+    "size": 288870390,
+    "neox_tokens": 124286360
   },
   "sage": {
     "files": 1930,
@@ -20,14 +20,14 @@
     "neox_tokens": 6338278
   },
   "mathematica": {
-    "files": 41260,
-    "size": 1877927466,
-    "neox_tokens": 919343374
+    "files": 21810,
+    "size": 1700014047,
+    "neox_tokens": 823529437
   },
   "maple": {
-    "files": 2308,
-    "size": 26826063,
-    "neox_tokens": 13467809
+    "files": 1289,
+    "size": 15402705,
+    "neox_tokens": 8497546
   },
   "gap": {
     "files": 1210,
@@ -60,8 +60,8 @@
     "neox_tokens": 1395785767
   },
   "tex": {
-    "files": 225955,
-    "size": 2957553367,
-    "neox_tokens": 1016657725
+    "files": 142430,
+    "size": 2181592225,
+    "neox_tokens": 687180072
   }
 }

@@ -1,7 +1,10 @@
 # Don't save training data
 proof-pile-v2/stack-code/*/
 *.jsonl
+*.jsonl.zst
+*.jsonl.gz
 *.hf
+
 
 # Don't save model weights
 *.pt
