@@ -19,6 +19,11 @@ The stack is processed in `./thestack.py`
     - [x] Fix: `maple_filte()` removes xml. 
 - Issue: Lots of auto-generated tex files in directories called `latex`.
     - [x] Fix: removed in `tex_filter_rexp()`
+- Issue: Jupyter notebook files contain extra JSON (e.g. with cell IDs, execution count)
+    - [x] Fix: convert to Markdown. In particular, this results in a clean interleaving of text, math, and code.
+- Issue: Jupyter notebook files are often too long to be tokenized.
+    - Sub-issue/source: files contain long outputs, which may include PNG strings. 
+    - [X] Fix: remove outputs from the notebook. 
 
 **Languages the stack does ok**:
 - Lean is fine
@@ -28,4 +33,5 @@ The stack is processed in `./thestack.py`
 **Open questions**:
 - I'm not sure if my C/C++ filtering is good at all. Am I getting too many `.h` files?
 - Do we want Chinese comments in our Python?
+- Currently the jupyter notebook filtering is strict. We can add more conditions if we want more data.
     
