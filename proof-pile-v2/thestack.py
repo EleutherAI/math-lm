@@ -83,7 +83,8 @@ def mathematica_filter(example):
     return example["max_stars_repo_name"] != "dendaxD/QAOA-MaxCut-amplitudes"
 
 def maple_filter(example): 
-    return "<?xml" != example["content"][:5]
+    xml_string = "<?xml"
+    return xml_string != example["content"][:len(xml_string)]
 
 def py_filter(example):
     text = example["content"]
