@@ -1,7 +1,7 @@
 # Proofpilev2
 
 ## The Stack
-The stack is processed in `./thestack.py`
+The stack is processed in `./process_source_code.py`
 **Problems with the stack**
 - Issue: Matlab is wrong. There are only 111 matlab files that match the regex `[a-df-zA-Z]`. Looks like most of the matlab files are just arrays saved as text. Very little of the actual code was captured. 
     - [x] Fix 1: Regex filter to delete arrays
