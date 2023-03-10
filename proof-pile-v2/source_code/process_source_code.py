@@ -53,7 +53,6 @@ SAVE_DIR = "stack-code"
 DATA_DIRS = [
     # numerical computing
     #"matlab",
-    #"julia",
     #"r",
     # CAS
     #"sage",
@@ -67,7 +66,8 @@ DATA_DIRS = [
 
 DATA_DIRS_TO_FILTER = [
     #"python",
-    "jupyter-notebook"
+    # "jupyter-notebook",
+    "julia",
     #"c",
     #"c++",
     #"tex",
@@ -140,6 +140,10 @@ def cpp_filter(example):
     return found
 
 
+def julia_filter(example):
+    return True
+
+
 def tex_filter_rexp(example, rexp):
     if example["ext"] != "tex": 
         return False 
@@ -199,10 +203,13 @@ def main():
 
     for lang in DATA_DIRS + DATA_DIRS_TO_FILTER:
         print(lang.upper() + "#" * 70)
-
+        use_auth_token=None
+        if (tok := os.environ.get("HUGGING_FACE_TOKEN")) is not None:
+            use_auth_token = tok
         print(f"loading {lang} data...")
         ds = load_dataset(
-            "bigcode/the-stack-dedup", data_dir=f"data/{lang}", split="train"
+            "bigcode/the-stack-dedup", data_dir=f"data/{lang}", split="train",
+            use_auth_token=use_auth_token
         )
 
         # debugging block
