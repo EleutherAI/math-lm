@@ -191,15 +191,37 @@ def jupyter_notebook_filter(example):
     return False
 
 
+def _filter_cell_output(output):
+    # See https://ipython.org/ipython-doc/3/notebook/nbformat.html
+    #   as a reference on formatting.
+    # Remove image/png data (a base64 string).
+    if ('output_type' in output and
+            'data' in output and
+            'image/png' in output['data'] and
+            len(output['data']['image/png']) > 0):
+        return True
+
+    # Remove exceptions.
+    if 'ename' in output and 'traceback' in output:
+        return True
+    return False
+
+
 def process_jupyter_notebook(example):
     try:
         content = example['content']
         notebook = nbformat.reads(content, as_version=4)
 
-        # Clear the output cells
+        # Filter output content.
         for cell in notebook.cells:
             if 'outputs' in cell:
-                cell['outputs'] = []
+                clear = False
+                for output in cell['outputs']:
+                    if _filter_cell_output(output):
+                        clear = True
+                        break
+                if clear:
+                    cell['outputs'] = []
 
         # Convert to Markdown
         exporter = MarkdownExporter()
@@ -238,7 +260,6 @@ def main():
     stats = {}
 
     tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
-
     for lang in DATA_DIRS + DATA_DIRS_TO_FILTER:
         print(lang.upper() + "#" * 70)
 
