@@ -23,7 +23,7 @@ The stack is processed in `./thestack.py`
     - [x] Fix: convert to Markdown. In particular, this results in a clean interleaving of text, math, and code.
 - Issue: Jupyter notebook files are often too long to be tokenized.
     - Sub-issue/source: files contain long outputs; for instance, these can include dumped tables, variable values, and PNG strings. 
-    - [X] Fix: remove outputs from the notebook. Note that this removes the implicit task of predicted execution results.
+    - [X] Fix: remove outputs from the notebook that are base64 png strings or exception tracebacks. 
 
 **Languages the stack does ok**:
 - Lean is fine
