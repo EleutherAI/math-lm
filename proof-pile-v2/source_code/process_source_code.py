@@ -55,7 +55,6 @@ SAVE_DIR = "stack-code"
 DATA_DIRS = [
     # numerical computing
     #"matlab",
-    #"julia",
     #"r",
     # CAS
     #"sage",
@@ -69,7 +68,8 @@ DATA_DIRS = [
 
 DATA_DIRS_TO_FILTER = [
     #"python",
-    "jupyter-notebook"
+    # "jupyter-notebook",
+    "julia",
     #"c",
     #"c++",
     #"tex",
@@ -139,6 +139,73 @@ def cpp_filter(example):
 
     found = [x for x in keywords if x in text]
     return found
+
+
+def julia_test_file(ex, ratio=0.1):
+    # Whether a file has some minimum ratio of @test statements
+    txt = ex["content"]
+    kwd = "@test"
+    nlines = txt.count("\n") + 1
+    return kwd in txt and (txt.count(kwd) / nlines >= ratio)
+
+def julia_numerical_density(ex):
+    # The ratio of digit characters over non-digit characters in the file
+    txt = ex["content"]
+    ntoks = sum(txt.count(c) for c in "0123456789")
+    return ntoks / len(txt)
+
+def generated_file(ex):
+    #This heuristic happens to be superfluous
+    return "generated" in ex["max_stars_repo_name"] or ex["max_stars_repo_name"][0] == "."
+
+def julia_filter(ex):
+    if ex["content"][0] in ["%", "{", "["]:
+        # Eliminates non-Julia files such as JSON lines (.jl) files 
+        return False
+    elif ex["size"] >= 1e5:
+        # Overly large files are often auto-generated boilerplate and/or mostly
+        # contain large arrays of numbers.Thus, we reject such large files unless
+        # unless they are test files with low numerical density.
+        return julia_test_file(ex) and julia_numerical_density(ex) <= 0.5
+    else:
+        return True
+    
+# A list of keywords that make a Julia file interesting
+julia_whitelist = [
+    # Popular packages for scientific computing
+    "LinearAlgebra",
+    "DifferentialEquations",
+    "Symbolics",
+    "Distributions",
+    "DataFrames",
+    "DynamicalSystems",
+    "Turing",
+    "Gen",
+    "JuMP",
+    # Standard mathematical functions
+    "sqrt",
+    "abs",
+    "zeros",
+    "ones",
+    "sin",
+    "cos",
+    "tan",
+    "log",
+    "exp",
+    "integrate",
+    "likelihood",
+    "Matrix",
+    "π",
+    "pi",
+    "rand",
+    "grad"
+]
+
+julia_whitelist_rexp = re.compile("|".join("(\\W" + kwd + "\\W)" for kwd in julia_whitelist))
+
+def julia_filter_strict(ex):
+    # A stricter Julia filter that operates from a whitelist
+    return julia_filter(ex) and julia_whitelist_rexp.search(ex["content"])
 
 
 def tex_filter_rexp(example, rexp):
@@ -262,10 +329,13 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
     for lang in DATA_DIRS + DATA_DIRS_TO_FILTER:
         print(lang.upper() + "#" * 70)
-
+        use_auth_token=None
+        if (tok := os.environ.get("HUGGING_FACE_TOKEN")) is not None:
+            use_auth_token = tok
         print(f"loading {lang} data...")
         ds = load_dataset(
-            "bigcode/the-stack-dedup", data_dir=f"data/{lang}", split="train"
+            "bigcode/the-stack-dedup", data_dir=f"data/{lang}", split="train",
+            use_auth_token=use_auth_token
         )
 
         # debugging block
@@ -289,6 +359,8 @@ def main():
             ds = ds.filter(cpp_filter, num_proc=NUM_PROC)
         elif lang == "tex":
             ds = ds.filter(tex_filter, num_proc=NUM_PROC)
+        elif lang == "julia":
+            ds = ds.filter(julia_filter, num_proc=NUM_PROC)
         elif lang == "jupyter-notebook":
             ds = ds.filter(jupyter_notebook_filter, num_proc=NUM_PROC)
             ds = ds.map(process_jupyter_notebook, num_proc=NUM_PROC)

@@ -1,5 +1,6 @@
 # Don't save training data
 proof-pile-v2/stack-code/*/
+/proof-pile-v2/source_code/analysis/
 *.jsonl
 *.jsonl.zst
 *.jsonl.gz
@@ -170,3 +171,5 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+.vscode
