@@ -20,8 +20,8 @@ The stack is processed in `./process_source_code.py`
 - Issue: Lots of auto-generated tex files in directories called `latex`.
     - [x] Fix: removed in `tex_filter_rexp()`
 - Issue: The Julia dataset contains JSON Lines files with extension `.jl` and  large files of auto-generated boilerplate (e.g. wrappers, dumps of large arrays...).
-    - [x] Fix: `julia_filter` reduces the dataset size from 175GB to 150GB.
-    - [x] Fix: `julia_filter_strict` further reduces it to 100GB by using an explicit whitelist of keywords that tests for direct relevance to scientific computing.
+    - [x] Fix: `julia_filter` reduces the dataset size from 1.75GB to 1.5GB.
+    - [x] Fix: `julia_filter_strict` further reduces it to 1GB by using an explicit whitelist of keywords that tests for direct relevance to scientific computing.
 
 **Languages the stack does ok**:
 - Lean is fine
