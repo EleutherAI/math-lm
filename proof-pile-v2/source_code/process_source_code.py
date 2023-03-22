@@ -9,8 +9,10 @@ import random
 import re
 from pathlib import Path
 import shutil
+import nbformat
 from functools import reduce, partial
 from transformers import AutoTokenizer
+from nbconvert.exporters import MarkdownExporter
 
 """
 Just as a reminder, here are the stack keys:
@@ -86,8 +88,7 @@ def mathematica_filter(example):
     return example["max_stars_repo_name"] != "dendaxD/QAOA-MaxCut-amplitudes"
 
 def maple_filter(example): 
-    xml_string = "<?xml"
-    return xml_string != example["content"][:len(xml_string)]
+    return "<?xml" != example["content"][:5]
 
 def py_filter(example):
     text = example["content"]
@@ -242,6 +243,69 @@ h = re.compile("[\u0370-\u18aA\u3000-\U0001047f]")
 tex_filter = partial(tex_filter_rexp, rexp=h)
 
 
+def jupyter_notebook_filter(example):
+    text = example["content"]
+    lower = text.lower()
+    keywords = {
+        "\\begin{equation}",
+        "\\begin{align}",
+        "import sympy",
+        "from sympy"
+    }
+    for keyword in keywords:
+        if keyword in lower:
+            return True
+    return False
+
+
+def _filter_cell_output(output):
+    # See https://ipython.org/ipython-doc/3/notebook/nbformat.html
+    #   as a reference on formatting.
+    # Remove image/png data (a base64 string).
+    if ('output_type' in output and
+            'data' in output and
+            'image/png' in output['data'] and
+            len(output['data']['image/png']) > 0):
+        return True
+
+    # Remove exceptions.
+    if 'ename' in output and 'traceback' in output:
+        return True
+    return False
+
+
+def process_jupyter_notebook(example):
+    try:
+        content = example['content']
+        notebook = nbformat.reads(content, as_version=4)
+
+        # Filter output content.
+        for cell in notebook.cells:
+            if 'outputs' in cell:
+                clear = False
+                for output in cell['outputs']:
+                    if _filter_cell_output(output):
+                        clear = True
+                        break
+                if clear:
+                    cell['outputs'] = []
+
+        # Convert to Markdown
+        exporter = MarkdownExporter()
+        body, resources = exporter.from_notebook_node(notebook)
+        example['content'] = body
+        example['converted'] = True
+
+    # Mark to discard later if conversion wasn't successful.
+    except Exception:
+        example['converted'] = False
+    return example
+
+
+def filter_processed_jupyter_notebook(example):
+    return example['converted']
+
+
 def token_length(examples, tokenizer):
     return {
         "neox_tokens": [len(x) for x in tokenizer(examples["content"])["input_ids"]]
@@ -263,7 +327,6 @@ def main():
     stats = {}
 
     tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
-
     for lang in DATA_DIRS + DATA_DIRS_TO_FILTER:
         print(lang.upper() + "#" * 70)
         use_auth_token=None
@@ -298,6 +361,10 @@ def main():
             ds = ds.filter(tex_filter, num_proc=NUM_PROC)
         elif lang == "julia":
             ds = ds.filter(julia_filter, num_proc=NUM_PROC)
+        elif lang == "jupyter-notebook":
+            ds = ds.filter(jupyter_notebook_filter, num_proc=NUM_PROC)
+            ds = ds.map(process_jupyter_notebook, num_proc=NUM_PROC)
+            ds = ds.filter(filter_processed_jupyter_notebook, num_proc=NUM_PROC)
         else:
             print("NO FILTERING APPLICABLE")
 
@@ -325,6 +392,7 @@ def main():
         print(stats_of_lang)
 
         print("saving dataset to disk in batches...")
+
         save_lang = os.path.join(SAVE_DIR, lang)
         if Path(save_lang).exists():
             shutil.rmtree(save_lang)

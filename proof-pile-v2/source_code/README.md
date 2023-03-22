@@ -22,6 +22,11 @@ The stack is processed in `./process_source_code.py`
 - Issue: The Julia dataset contains JSON Lines files with extension `.jl` and  large files of auto-generated boilerplate (e.g. wrappers, dumps of large arrays...).
     - [x] Fix: `julia_filter` reduces the dataset size from 1.75GB to 1.5GB.
     - [x] Fix: `julia_filter_strict` further reduces it to 1GB by using an explicit whitelist of keywords that tests for direct relevance to scientific computing.
+- Issue: Jupyter notebook files contain extra JSON (e.g. with cell IDs, execution count)
+    - [x] Fix: convert to Markdown. In particular, this results in a clean interleaving of text, math, and code.
+- Issue: Jupyter notebook files are often too long to be tokenized.
+    - Sub-issue/source: files contain long outputs; for instance, these can include dumped tables, variable values, and PNG strings. 
+    - [X] Fix: remove outputs from the notebook that are base64 png strings or exception tracebacks. 
 
 **Languages the stack does ok**:
 - Lean is fine
@@ -30,4 +35,5 @@ The stack is processed in `./process_source_code.py`
 **Open questions**:
 - I'm not sure if my C/C++ filtering is good at all. Am I getting too many `.h` files?
 - Do we want Chinese comments in our Python?
+- Currently the jupyter notebook filtering is strict. We can add more conditions if we want more data.
     

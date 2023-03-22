@@ -63,5 +63,10 @@
     "files": 142430,
     "size": 2181592225,
     "neox_tokens": 687180072
+  },
+  "jupyter-notebook": {
+    "files": 25057,
+    "size": 4113112845,
+    "neox_tokens": 325741199
   }
 }
