@@ -4,3 +4,4 @@ PyYAML==6.0
 torch==1.12.0
 tqdm==4.64.0
 transformers==4.20.1
+lxml
