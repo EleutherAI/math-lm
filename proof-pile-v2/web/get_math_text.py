@@ -45,6 +45,15 @@ Also uses mathml, but makes use of the `semantics > annotation`.
 </math>
 ```
 
+Wikipedia also uses spans
+
+```
+The case <span class="texhtml"><i>a</i> = −1</span> leads to ...
+```
+
+These spans can contain unicode too, so they are not always valid LaTeX, so I think it's best to keep them
+as text (`"The case a = -1 leads to ..."`) rather than trying to convert to valid latex.
+
 So the procedure for extracting math text from math  is:
 - Look for an element matching `math annotation[encoding="application/x-tex"]`, use that.
 - Otherwise, look at the `alttext` attribute of the `math` tag.
