@@ -1,5 +1,6 @@
 # Don't save training data
 proof-pile-v2/stack-code/*/
+/proof-pile-v2/source_code/analysis/
 *.jsonl
 *.jsonl.zst
 *.jsonl.gz
@@ -174,3 +175,5 @@ pyrightconfig.json
 
 
 proof-pile-v2/web/example_text
+
+.vscode
