@@ -57,7 +57,6 @@ DATA_DIRS = [
     #"matlab",
     #"r",
     # CAS
-    #"sage",
     #"mathematica",
     #"maple",
     #"gap",
