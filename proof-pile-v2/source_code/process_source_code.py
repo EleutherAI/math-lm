@@ -54,7 +54,7 @@ SAVE_DIR = "stack-code"
 
 DATA_DIRS = [
     # numerical/statistical computing
-    #"r",
+    "r",
     # CAS
     #"maple",
     #"gap",
@@ -63,7 +63,7 @@ DATA_DIRS = [
     #"isabelle",
     # imperative languages
     #"python",
-    # "jupyter-notebook",
+    #"jupyter-notebook",
     #"julia",
     #"c",
     #"c++",
@@ -71,14 +71,25 @@ DATA_DIRS = [
     #"tex",
 ]
 
-def matlab_rexp(example, rexp):
-    return bool(rexp.search(example["content"]))
-
-h = re.compile('[a-df-zA-Z]')
-matlab_filter = partial(matlab_rexp, rexp=h)
-
+is_reference_design_rexp = re.compile(r"Requirement\s+\{\s+Identifier")
 def r_filter(example): 
-    return "/* Resource fork" not in example["content"]
+    is_resource_fork = "/* Resource fork" in example["content"]
+    if is_resource_fork: 
+        return False
+
+    if is_reference_design_rexp.search(example["content"]):
+        return False
+
+    is_xml = example["content"].startswith("<?xml")
+    if is_xml: 
+        return False
+
+    # R files are not supposed to be notebooks
+    is_notebook = example["content"].startswith('{')
+    if is_notebook: 
+        return False
+    
+    return True
 
 def maple_filter(example): 
     return "<?xml" != example["content"][:5]
@@ -320,7 +331,7 @@ def main():
     stats = {}
 
     tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
-    for lang in DATA_DIRS + DATA_DIRS_TO_FILTER:
+    for lang in DATA_DIRS:
         print(lang.upper() + "#" * 70)
         use_auth_token=None
         if (tok := os.environ.get("HUGGING_FACE_TOKEN")) is not None:
