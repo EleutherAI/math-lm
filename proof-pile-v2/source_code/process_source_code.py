@@ -53,39 +53,43 @@ SAVE_BATCH_SIZE = 100_000
 SAVE_DIR = "stack-code"
 
 DATA_DIRS = [
-    # numerical computing
-    #"matlab",
-    #"r",
+    # numerical/statistical computing
+    "r",
     # CAS
-    #"sage",
-    #"mathematica",
     #"maple",
     #"gap",
     # formal math
     #"lean",
     #"isabelle",
-]
-
-DATA_DIRS_TO_FILTER = [
+    # imperative languages
     #"python",
-    # "jupyter-notebook",
-    "julia",
+    #"jupyter-notebook",
+    #"julia",
     #"c",
     #"c++",
+    # markup languages
     #"tex",
 ]
 
-def matlab_rexp(example, rexp):
-    return bool(rexp.search(example["content"]))
-
-h = re.compile('[a-df-zA-Z]')
-matlab_filter = partial(matlab_rexp, rexp=h)
-
+is_reference_design_rexp = re.compile(r"Requirement\s+\{\s+Identifier")
 def r_filter(example): 
-    return "/* Resource fork" not in example["content"]
+    is_resource_fork = "/* Resource fork" in example["content"]
+    if is_resource_fork: 
+        return False
 
-def mathematica_filter(example): 
-    return example["max_stars_repo_name"] != "dendaxD/QAOA-MaxCut-amplitudes"
+    if is_reference_design_rexp.search(example["content"]):
+        return False
+
+    is_xml = example["content"].startswith("<?xml")
+    if is_xml: 
+        return False
+
+    # R files are not supposed to be notebooks
+    is_notebook = example["content"].startswith('{')
+    if is_notebook: 
+        return False
+    
+    return True
 
 def maple_filter(example): 
     return "<?xml" != example["content"][:5]
@@ -327,7 +331,7 @@ def main():
     stats = {}
 
     tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
-    for lang in DATA_DIRS + DATA_DIRS_TO_FILTER:
+    for lang in DATA_DIRS:
         print(lang.upper() + "#" * 70)
         use_auth_token=None
         if (tok := os.environ.get("HUGGING_FACE_TOKEN")) is not None:
@@ -335,7 +339,7 @@ def main():
         print(f"loading {lang} data...")
         ds = load_dataset(
             "bigcode/the-stack-dedup", data_dir=f"data/{lang}", split="train",
-            use_auth_token=use_auth_token
+            use_auth_token=use_auth_token,
         )
 
         # debugging block
@@ -347,8 +351,6 @@ def main():
             ds = ds.filter(matlab_filter, num_proc=NUM_PROC)
         elif lang=="r":
             ds = ds.filter(r_filter, num_proc=NUM_PROC)
-        elif lang=="mathematica":
-            ds = ds.filter(mathematica_filter, num_proc=NUM_PROC)
         elif lang=="maple":
             ds = ds.filter(maple_filter, num_proc=NUM_PROC)
         elif lang == "python":
@@ -397,12 +399,14 @@ def main():
         if Path(save_lang).exists():
             shutil.rmtree(save_lang)
         Path(save_lang).mkdir(parents=True, exist_ok=True)
-
+        
+        num_batches = len(ds)//SAVE_BATCH_SIZE+1
+        digits_in_filename = max(len(str(num_batches)), 4)
         for i, batch in tqdm(
             enumerate(batch_loader(ds, SAVE_BATCH_SIZE)),
-            total=len(ds) // SAVE_BATCH_SIZE + 1,
+            total=num_batches,
         ):
-            with open(os.path.join(save_lang, str(i).zfill(7) + ".jsonl"), "w") as f:
+            with open(os.path.join(save_lang, str(i).zfill(digits_in_filename) + ".jsonl"), "w") as f:
                 ndjson.dump(batch, f)
 
         print("saving stats to disk...")
