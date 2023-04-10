@@ -53,24 +53,21 @@ SAVE_BATCH_SIZE = 100_000
 SAVE_DIR = "stack-code"
 
 DATA_DIRS = [
-    # numerical computing
-    #"matlab",
+    # numerical/statistical computing
     #"r",
     # CAS
-    #"mathematica",
     #"maple",
     #"gap",
     # formal math
     #"lean",
     #"isabelle",
-]
-
-DATA_DIRS_TO_FILTER = [
+    # imperative languages
     #"python",
     # "jupyter-notebook",
-    "julia",
+    #"julia",
     #"c",
     #"c++",
+    # markup languages
     #"tex",
 ]
 
@@ -82,9 +79,6 @@ matlab_filter = partial(matlab_rexp, rexp=h)
 
 def r_filter(example): 
     return "/* Resource fork" not in example["content"]
-
-def mathematica_filter(example): 
-    return example["max_stars_repo_name"] != "dendaxD/QAOA-MaxCut-amplitudes"
 
 def maple_filter(example): 
     return "<?xml" != example["content"][:5]
@@ -334,7 +328,7 @@ def main():
         print(f"loading {lang} data...")
         ds = load_dataset(
             "bigcode/the-stack-dedup", data_dir=f"data/{lang}", split="train",
-            use_auth_token=use_auth_token
+            use_auth_token=use_auth_token,
         )
 
         # debugging block
@@ -346,8 +340,6 @@ def main():
             ds = ds.filter(matlab_filter, num_proc=NUM_PROC)
         elif lang=="r":
             ds = ds.filter(r_filter, num_proc=NUM_PROC)
-        elif lang=="mathematica":
-            ds = ds.filter(mathematica_filter, num_proc=NUM_PROC)
         elif lang=="maple":
             ds = ds.filter(maple_filter, num_proc=NUM_PROC)
         elif lang == "python":
@@ -396,12 +388,14 @@ def main():
         if Path(save_lang).exists():
             shutil.rmtree(save_lang)
         Path(save_lang).mkdir(parents=True, exist_ok=True)
-
+        
+        num_batches = len(ds)//SAVE_BATCH_SIZE+1
+        digits_in_filename = max(len(str(num_batches)), 4)
         for i, batch in tqdm(
             enumerate(batch_loader(ds, SAVE_BATCH_SIZE)),
-            total=len(ds) // SAVE_BATCH_SIZE + 1,
+            total=num_batches,
         ):
-            with open(os.path.join(save_lang, str(i).zfill(7) + ".jsonl"), "w") as f:
+            with open(os.path.join(save_lang, str(i).zfill(digits_in_filename) + ".jsonl"), "w") as f:
                 ndjson.dump(batch, f)
 
         print("saving stats to disk...")
