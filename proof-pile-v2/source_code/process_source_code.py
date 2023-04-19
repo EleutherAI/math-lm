@@ -14,6 +14,8 @@ from functools import reduce, partial
 from transformers import AutoTokenizer
 from nbconvert.exporters import MarkdownExporter
 
+import code
+
 """
 Just as a reminder, here are the stack keys:
 
@@ -59,12 +61,12 @@ DATA_DIRS = [
     #"maple",
     #"gap",
     # formal math
-    #"lean",
+    "lean",
     #"isabelle",
     # imperative languages
     #"python",
     #"jupyter-notebook",
-    #"julia",
+    # "julia",
     #"c",
     #"c++",
     # markup languages
@@ -342,6 +344,7 @@ def main():
             use_auth_token=use_auth_token,
         )
 
+
         # debugging block
         # print("selecting samples from dataset (debugging)...")
         # ds = ds.select(random.sample(range(len(ds)), k=10_000))
@@ -399,15 +402,34 @@ def main():
         if Path(save_lang).exists():
             shutil.rmtree(save_lang)
         Path(save_lang).mkdir(parents=True, exist_ok=True)
-        
+
+        # train, validation, test, spit
+        test_len = max(int(0.005*len(ds)), 1)
+        train = ds.select(range(len(ds)-2*test_len))
+        validation = ds.select(range(len(ds)-2*test_len, len(ds)-test_len))
+        test = ds.select(range(len(ds)-test_len, len(ds)))
+
+        print(f"TRAIN LENGTH: {len(train)}")
+        print(f"VALIDATION LENGTH: {len(validation)}")
+        print(f"TEST LENGTH: {len(test)}")
+         
+        # save train, valid, test
         num_batches = len(ds)//SAVE_BATCH_SIZE+1
         digits_in_filename = max(len(str(num_batches)), 4)
         for i, batch in tqdm(
-            enumerate(batch_loader(ds, SAVE_BATCH_SIZE)),
+            enumerate(batch_loader(train, SAVE_BATCH_SIZE)),
             total=num_batches,
         ):
-            with open(os.path.join(save_lang, str(i).zfill(digits_in_filename) + ".jsonl"), "w") as f:
+            with open(os.path.join(save_lang, lang + str(i).zfill(digits_in_filename) + ".jsonl"), "w") as f:
                 ndjson.dump(batch, f)
+
+        with open(os.path.join(save_lang, f"{lang}-validation.jsonl"), "w") as f:
+            batch = [x for x in validation]
+            ndjson.dump(batch, f)
+
+        with open(os.path.join(save_lang, f"{lang}-test.jsonl"), "w") as f:
+            batch = [x for x in test]
+            ndjson.dump(batch, f)
 
         print("saving stats to disk...")
         stats_path = os.path.join(SAVE_DIR, "stats.json")
