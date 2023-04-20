@@ -1,4 +1,6 @@
 # Don't save training data
+*.out
+*.err
 proof-pile-v2/issues_diffs/raw_pilev2/*
 proof-pile-v2/source_code/stack-code/*index
 proof-pile-v2/source_code/stack-code/*/
