@@ -15,4 +15,3 @@ source /fsx/gpt-neox/conda/bin/activate mathlm1
 cd /fsx/mathlm0/math-lm/proof-pile-v2/source_code/
 
 python process_source_code.py
-
