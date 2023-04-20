@@ -1,0 +1,27 @@
+{
+  "r": {
+    "files": 38330,
+    "size": 185937788,
+    "neox_tokens": 67649444
+  },
+  "maple": {
+    "files": 1215,
+    "size": 14104336,
+    "neox_tokens": 7842746
+  },
+  "gap": {
+    "files": 1124,
+    "size": 12396958,
+    "neox_tokens": 5203022
+  },
+  "lean": {
+    "files": 16891,
+    "size": 95102762,
+    "neox_tokens": 39796918
+  },
+  "isabelle": {
+    "files": 5086,
+    "size": 90591316,
+    "neox_tokens": 35630142
+  }
+}

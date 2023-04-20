@@ -50,27 +50,27 @@ max_line_length
 alphanum_fraction
 """
 
-NUM_PROC = 10
-SAVE_BATCH_SIZE = 100_000
+NUM_PROC = 8
+SAVE_BATCH_SIZE = 50_000
 SAVE_DIR = "stack-code"
 
 DATA_DIRS = [
     # numerical/statistical computing
     "r",
     # CAS
-    #"maple",
-    #"gap",
+    "maple",
+    "gap",
     # formal math
     "lean",
-    #"isabelle",
+    "isabelle",
     # imperative languages
-    #"python",
-    #"jupyter-notebook",
-    # "julia",
-    #"c",
-    #"c++",
+    "python",
+    "jupyter-notebook",
+    "julia",
+    "c",
+    "c++",
     # markup languages
-    #"tex",
+    "tex",
 ]
 
 is_reference_design_rexp = re.compile(r"Requirement\s+\{\s+Identifier")
@@ -398,10 +398,9 @@ def main():
 
         print("saving dataset to disk in batches...")
 
-        save_lang = os.path.join(SAVE_DIR, lang)
-        if Path(save_lang).exists():
-            shutil.rmtree(save_lang)
-        Path(save_lang).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(SAVE_DIR, "train/")).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(SAVE_DIR, "validation/")).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(SAVE_DIR, "test/")).mkdir(parents=True, exist_ok=True)
 
         # train, validation, test, spit
         test_len = max(int(0.005*len(ds)), 1)
@@ -420,14 +419,14 @@ def main():
             enumerate(batch_loader(train, SAVE_BATCH_SIZE)),
             total=num_batches,
         ):
-            with open(os.path.join(save_lang, lang + str(i).zfill(digits_in_filename) + ".jsonl"), "w") as f:
+            with open(os.path.join(SAVE_DIR, "train", lang + str(i).zfill(digits_in_filename) + ".jsonl"), "w") as f:
                 ndjson.dump(batch, f)
 
-        with open(os.path.join(save_lang, f"{lang}-validation.jsonl"), "w") as f:
+        with open(os.path.join(SAVE_DIR, "validation", f"{lang}-validation.jsonl"), "w") as f:
             batch = [x for x in validation]
             ndjson.dump(batch, f)
 
-        with open(os.path.join(save_lang, f"{lang}-test.jsonl"), "w") as f:
+        with open(os.path.join(SAVE_DIR, "test", f"{lang}-test.jsonl"), "w") as f:
             batch = [x for x in test]
             ndjson.dump(batch, f)
 
@@ -442,6 +441,13 @@ def main():
         stats[lang] = stats_of_lang
         with open(stats_path, "w") as f:
             f.write(json.dumps(stats, indent=2))
+
+        # creating repo index
+        print(f"creating {lang} repo index...")
+        repo_index = list(set([x["max_stars_repo_name"] for x in tqdm(ds)]))
+        repo_index_path = os.path.join(SAVE_DIR, f"{lang}_index")
+        with open(repo_index_path, "w") as f: 
+            f.write("\n".join(repo_index))
 
 
 if __name__ == "__main__":
