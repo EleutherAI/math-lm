@@ -328,6 +328,9 @@ def batch_loader(ds, size):
         else:
             yield [x for x in ds.select(list(range(pos, len(ds))))]
 
+def save_dict_of_example(x): 
+    return {"text": x["content"], "meta": {k: x[k] for k in x if k!="content"}}
+
 
 def main():
     stats = {}
@@ -413,6 +416,7 @@ def main():
         print(f"TEST LENGTH: {len(test)}")
          
         # save train, valid, test
+        print("saving dataset to disk...")
         num_batches = len(ds)//SAVE_BATCH_SIZE+1
         digits_in_filename = max(len(str(num_batches)), 4)
         for i, batch in tqdm(
@@ -420,15 +424,17 @@ def main():
             total=num_batches,
         ):
             with open(os.path.join(SAVE_DIR, "train", lang + str(i).zfill(digits_in_filename) + ".jsonl"), "w") as f:
-                ndjson.dump(batch, f)
+                for x in batch: 
+                    f.write(json.dumps(save_dict_of_example(x)))
+                    f.write("\n")
 
         with open(os.path.join(SAVE_DIR, "validation", f"{lang}-validation.jsonl"), "w") as f:
-            batch = [x for x in validation]
-            ndjson.dump(batch, f)
+            for x in validation: 
+                f.write(json.dumps(save_dict_of_example(x)) + "\n")
 
         with open(os.path.join(SAVE_DIR, "test", f"{lang}-test.jsonl"), "w") as f:
-            batch = [x for x in test]
-            ndjson.dump(batch, f)
+            for x in test: 
+                f.write(json.dumps(save_dict_of_example(x)) + "\n")
 
         print("saving stats to disk...")
         stats_path = os.path.join(SAVE_DIR, "stats.json")

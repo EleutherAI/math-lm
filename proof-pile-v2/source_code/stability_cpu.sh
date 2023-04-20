@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=buildsourcecodedataset
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
-#SBATCH --time=2:00:00
+#SBATCH --time=3:00:00
 #SBATCH --output=/fsx/mathlm0/math-lm/proof-pile-v2/source_code/job.out
 #SBATCH --error=/fsx/mathlm0/math-lm/proof-pile-v2/source_code/job.out
 #SBATCH --comment=eleuther
