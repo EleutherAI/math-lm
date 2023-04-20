@@ -11,7 +11,7 @@ from pathlib import Path
 import shutil
 import nbformat
 from functools import reduce, partial
-from transformers import AutoTokenizer
+import tiktoken
 from nbconvert.exporters import MarkdownExporter
 
 import code
@@ -50,7 +50,7 @@ max_line_length
 alphanum_fraction
 """
 
-NUM_PROC = 8
+NUM_PROC = 16
 SAVE_BATCH_SIZE = 50_000
 SAVE_DIR = "stack-code"
 
@@ -72,6 +72,7 @@ DATA_DIRS = [
     # markup languages
     "tex",
 ]
+
 
 is_reference_design_rexp = re.compile(r"Requirement\s+\{\s+Identifier")
 def r_filter(example): 
@@ -98,6 +99,10 @@ def maple_filter(example):
 
 def py_filter(example):
     text = example["content"]
+
+    if len(text.encode('utf-8')) > 1048575: 
+        return False 
+
     keywords = []
     packages = [
         "numpy",
@@ -312,9 +317,10 @@ def filter_processed_jupyter_notebook(example):
     return example['converted']
 
 
-def token_length(examples, tokenizer):
+def token_length(examples):
+    tokenizer = tiktoken.get_encoding("cl100k_base")
     return {
-        "neox_tokens": [len(x) for x in tokenizer(examples["content"])["input_ids"]]
+        "tokens": [len(x) for x in tokenizer.encode_batch(examples["content"])]
     }
 
 
@@ -324,9 +330,9 @@ def batch_loader(ds, size):
     chunks of size `size`"""
     for pos in range(0, len(ds), size):
         if pos + size < len(ds):
-            yield [x for x in ds.select(list(range(pos, pos + size)))]
+            yield ds.select(list(range(pos, pos + size)))
         else:
-            yield [x for x in ds.select(list(range(pos, len(ds))))]
+            yield ds.select(list(range(pos, len(ds))))
 
 def save_dict_of_example(x): 
     return {"text": x["content"], "meta": {k: x[k] for k in x if k!="content"}}
@@ -335,7 +341,6 @@ def save_dict_of_example(x):
 def main():
     stats = {}
 
-    tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
     for lang in DATA_DIRS:
         print(lang.upper() + "#" * 70)
         use_auth_token=None
@@ -378,7 +383,7 @@ def main():
 
         print("calculating tokens...")
         ds = ds.map(
-            partial(token_length, tokenizer=tokenizer),
+            token_length,
             batched=True,
             num_proc=NUM_PROC,
         )
@@ -389,12 +394,12 @@ def main():
         # counts number of files and dataset byte size and tokens in single loop
         print("calculating dataset statistics...")
         files, size, tokens = reduce(
-            lambda x, y: (x[0] + 1, x[1] + y["size"], x[2] + y["neox_tokens"]),
+            lambda x, y: (x[0] + 1, x[1] + y["size"], x[2] + y["tokens"]),
             tqdm(ds),
             (0, 0, 0),
         )
 
-        stats_of_lang = {"files": files, "size": size, "neox_tokens": tokens}
+        stats_of_lang = {"files": files, "size": size, "tokens": tokens}
 
         print("printing stats...")
         print(stats_of_lang)
