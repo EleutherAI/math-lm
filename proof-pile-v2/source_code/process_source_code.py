@@ -68,7 +68,7 @@ DATA_DIRS = [
     "jupyter-notebook",
     "julia",
     "c",
-    "c++",
+    "cpp",
     # markup languages
     "tex",
 ]
@@ -320,7 +320,10 @@ def filter_processed_jupyter_notebook(example):
 def token_length(examples):
     tokenizer = tiktoken.get_encoding("cl100k_base")
     return {
-        "tokens": [len(x) for x in tokenizer.encode_batch(examples["content"])]
+        "tokens": [len(x) for x in tokenizer.encode_batch(
+            examples["content"], 
+            disallowed_special=()
+            )]
     }
 
 
@@ -358,35 +361,51 @@ def main():
         # ds = ds.select(random.sample(range(len(ds)), k=10_000))
 
         print("filtering dataset...")
+        filter_kwargs = {"num_proc": NUM_PROC, "load_from_cache_file": False}
         if lang=="matlab":
-            ds = ds.filter(matlab_filter, num_proc=NUM_PROC)
+            ds = ds.filter(matlab_filter, **filter_kwargs)
         elif lang=="r":
-            ds = ds.filter(r_filter, num_proc=NUM_PROC)
+            ds = ds.filter(r_filter, **filter_kwargs)
         elif lang=="maple":
-            ds = ds.filter(maple_filter, num_proc=NUM_PROC)
+            ds = ds.filter(maple_filter, **filter_kwargs)
         elif lang == "python":
-            ds = ds.filter(py_filter, num_proc=NUM_PROC)
+            ds = ds.filter(py_filter, **filter_kwargs)
         elif lang == "c":
-            ds = ds.filter(c_filter, num_proc=NUM_PROC)
-        elif lang == "c++":
-            ds = ds.filter(cpp_filter, num_proc=NUM_PROC)
+            ds = ds.filter(c_filter, **filter_kwargs)
+        elif lang == "cpp":
+            ds = ds.filter(cpp_filter, **filter_kwargs)
         elif lang == "tex":
-            ds = ds.filter(tex_filter, num_proc=NUM_PROC)
+            ds = ds.filter(tex_filter, **filter_kwargs)
         elif lang == "julia":
-            ds = ds.filter(julia_filter, num_proc=NUM_PROC)
+            ds = ds.filter(julia_filter, **filter_kwargs)
         elif lang == "jupyter-notebook":
-            ds = ds.filter(jupyter_notebook_filter, num_proc=NUM_PROC)
-            ds = ds.map(process_jupyter_notebook, num_proc=NUM_PROC)
-            ds = ds.filter(filter_processed_jupyter_notebook, num_proc=NUM_PROC)
+            ds = ds.filter(jupyter_notebook_filter, **filter_kwargs)
+            ds = ds.map(process_jupyter_notebook, **filter_kwargs)
+            ds = ds.filter(
+                    filter_processed_jupyter_notebook, 
+                    **filter_kwargs,
+            )
         else:
             print("NO FILTERING APPLICABLE")
 
+    
         print("calculating tokens...")
-        ds = ds.map(
-            token_length,
-            batched=True,
-            num_proc=NUM_PROC,
-        )
+
+        if lang !="python": 
+            ds = ds.map(
+                token_length,
+                batched=True,
+                batch_size=1000,
+                num_proc=NUM_PROC,
+                load_from_cache_file=False
+            )
+        else: 
+            # for whatever reason, can't get python tokenization working
+            ds = ds.map(
+                    lambda x: {"tokens": 0}, 
+                    **filter_kwargs
+                    )
+        print("DONE CALCULATING TOKENS")
 
         for x in islice(ds, 1):
             print(x["content"])
