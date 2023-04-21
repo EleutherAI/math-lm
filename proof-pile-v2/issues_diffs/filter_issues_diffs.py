@@ -64,8 +64,8 @@ def main(args):
     assert isinstance(issues[0]["meta"], str)
     assert isinstance(diffs[0]["meta"], str)
 
-    filter_fn = lambda x: any([y in x["meta"] for y in index])
-
+    
+    print("filtering at repo level")
     filtered_issues = issues.filter(
         lambda x: ast.literal_eval(x["meta"])["repo_name_with_owner"] in index, 
         num_proc=args.cpus,
@@ -86,13 +86,14 @@ def main(args):
     test = ds.select(range(len(ds) - test_len, len(ds)))
 
     print(f"SPLIT: {len(train)}, {len(validation)}, {len(test)}")
-
+    
+    print("saving to disk...")
     for save_path, ds in zip(
         [train_path, validation_path, test_path], [train, validation, test]
     ):
         with open(os.path.join(save_path, "issues_diffs.jsonl"), "w") as f:
             for x in tqdm(ds):
-                y = {"text": x["text"], "meta": x["meta"]}
+                y = {"text": x["text"], "meta": ast.literal_eval(x["meta"])}
                 f.write(json.dumps(y))
                 f.write("\n")
 
