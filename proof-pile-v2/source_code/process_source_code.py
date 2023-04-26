@@ -54,6 +54,8 @@ alphanum_fraction
 SAVE_BATCH_SIZE = 50_000
 SAVE_DIR = "stack-code"
 
+TEXT_MAX_SIZE = 1048575 # in bytes
+
 DATA_DIRS = [
     # numerical/statistical computing
     "r",
@@ -74,10 +76,23 @@ DATA_DIRS = [
 ]
 
 
+def numerical_density(ex):
+    # The ratio of digit non-whitespace characters over non-digit non-whitespace
+    # characters in the file
+    txt = ''.join(ex["content"].split())
+    ntoks = sum(txt.count(c) for c in "0123456789")
+    return ntoks / len(txt)
+
+
+
 is_reference_design_rexp = re.compile(r"Requirement\s+\{\s+Identifier")
-
-
 def r_filter(example):
+    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
+        return False
+
+    if numerical_density(example) > .5: 
+        return False
+
     is_resource_fork = "/* Resource fork" in example["content"]
     if is_resource_fork:
         return False
@@ -98,13 +113,31 @@ def r_filter(example):
 
 
 def maple_filter(example):
+    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
+        return False
+
+    if numerical_density(example) > .5: 
+        return False
+
     return "<?xml" != example["content"][:5]
+
+
+def gap_filter(example): 
+    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
+        return False
+    elif numerical_density(example) > 0.5: 
+        return False
+    else: 
+        return True
 
 
 def py_filter(example):
     text = example["content"]
 
-    if len(text.encode("utf-8")) > 1048575:
+    if len(text.encode("utf-8")) > TEXT_MAX_SIZE:
+        return False
+
+    if numerical_density(example) > .5: 
         return False
 
     keywords = []
@@ -124,6 +157,12 @@ def py_filter(example):
 
 
 def c_filter(example):
+    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
+        return False
+
+    if numerical_density(example) > .5: 
+        return False
+
     text = example["content"]
     keywords = [
         "#include <fftw.h>",
@@ -137,6 +176,12 @@ def c_filter(example):
 
 
 def cpp_filter(example):
+    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
+        return False
+
+    if numerical_density(example) > .5: 
+        return False
+
     text = example["content"]
     keywords = [
         "#include <adept_arrays.h>",
@@ -164,13 +209,6 @@ def julia_test_file(ex, ratio=0.1):
     return kwd in txt and (txt.count(kwd) / nlines >= ratio)
 
 
-def julia_numerical_density(ex):
-    # The ratio of digit characters over non-digit characters in the file
-    txt = ex["content"]
-    ntoks = sum(txt.count(c) for c in "0123456789")
-    return ntoks / len(txt)
-
-
 def generated_file(ex):
     # This heuristic happens to be superfluous
     return (
@@ -186,7 +224,7 @@ def julia_filter(ex):
         # Overly large files are often auto-generated boilerplate and/or mostly
         # contain large arrays of numbers.Thus, we reject such large files unless
         # unless they are test files with low numerical density.
-        return julia_test_file(ex) and julia_numerical_density(ex) <= 0.5
+        return julia_test_file(ex) and numerical_density(ex) <= 0.5
     else:
         return True
 
@@ -233,6 +271,12 @@ def julia_filter_strict(ex):
 
 
 def tex_filter_rexp(example, rexp):
+    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
+        return False
+
+    if numerical_density(example) > .5: 
+        return False
+
     if example["ext"] != "tex":
         return False
 
@@ -269,6 +313,9 @@ tex_filter = partial(tex_filter_rexp, rexp=h)
 
 
 def jupyter_notebook_filter(example):
+    """
+    We don't apply the TEXT_MAX_SIZE filter to jupyter notebooks, as of yet
+    """
     text = example["content"]
     lower = text.lower()
     keywords = {"\\begin{equation}", "\\begin{align}", "import sympy", "from sympy"}
@@ -375,18 +422,14 @@ def main(args):
             use_auth_token=use_auth_token,
         )
 
-        # debugging block
-        # print("selecting samples from dataset (debugging)...")
-        # ds = ds.select(random.sample(range(len(ds)), k=10_000))
-
         print("filtering dataset...")
         filter_kwargs = {"num_proc": NUM_PROC, "load_from_cache_file": False}
-        if lang == "matlab":
-            ds = ds.filter(matlab_filter, **filter_kwargs)
-        elif lang == "r":
+        if lang == "r":
             ds = ds.filter(r_filter, **filter_kwargs)
         elif lang == "maple":
             ds = ds.filter(maple_filter, **filter_kwargs)
+        elif lang == "gap": 
+            ds = ds.filter(gap_filter, **filter_kwargs)
         elif lang == "python":
             ds = ds.filter(py_filter, **filter_kwargs)
         elif lang == "c":
