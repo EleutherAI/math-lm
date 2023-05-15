@@ -52,7 +52,8 @@ alphanum_fraction
 """
 
 SAVE_BATCH_SIZE = 50_000
-SAVE_DIR = "stack-code"
+DATA_DIR = "data_jsonl"
+META_DIR = "meta_json"
 
 TEXT_MAX_SIZE = 1048575 # in bytes
 
@@ -74,6 +75,7 @@ DATA_DIRS = [
     # markup languages
     "tex",
 ]
+
 
 
 def numerical_density(ex):
@@ -483,9 +485,10 @@ def main(args):
 
         print("saving dataset to disk in batches...")
 
-        Path(os.path.join(SAVE_DIR, "train/")).mkdir(parents=True, exist_ok=True)
-        Path(os.path.join(SAVE_DIR, "validation/")).mkdir(parents=True, exist_ok=True)
-        Path(os.path.join(SAVE_DIR, "test/")).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(DATA_DIR, "train/")).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(DATA_DIR, "validation/")).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(DATA_DIR, "test/")).mkdir(parents=True, exist_ok=True)
+        Path(META_DIR).mkdir(exist_ok=True)
 
         # train, validation, test, spit
         test_len = max(int(0.005 * len(ds)), 1)
@@ -507,7 +510,7 @@ def main(args):
         ):
             with open(
                 os.path.join(
-                    SAVE_DIR,
+                    DATA_DIR,
                     "train",
                     lang + str(i).zfill(digits_in_filename) + ".jsonl",
                 ),
@@ -518,17 +521,17 @@ def main(args):
                     f.write("\n")
 
         with open(
-            os.path.join(SAVE_DIR, "validation", f"{lang}-validation.jsonl"), "w"
+            os.path.join(DATA_DIR, "validation", f"{lang}-validation.jsonl"), "w"
         ) as f:
             for x in validation:
                 f.write(json.dumps(save_dict_of_example(x)) + "\n")
 
-        with open(os.path.join(SAVE_DIR, "test", f"{lang}-test.jsonl"), "w") as f:
+        with open(os.path.join(DATA_DIR, "test", f"{lang}-test.jsonl"), "w") as f:
             for x in test:
                 f.write(json.dumps(save_dict_of_example(x)) + "\n")
 
         print("saving stats to disk...")
-        stats_path = os.path.join(SAVE_DIR, "stats.json")
+        stats_path = os.path.join(META_DIR, "stats.json")
         if os.path.isfile(stats_path):
             with open(stats_path) as f:
                 stats = json.load(f)
@@ -542,7 +545,7 @@ def main(args):
         # creating repo index
         print(f"creating {lang} repo index...")
         repo_index = list(set([x["max_stars_repo_name"] for x in tqdm(ds)]))
-        repo_index_path = os.path.join(SAVE_DIR, f"{lang}_index")
+        repo_index_path = os.path.join(META_DIR, f"{lang}_index")
         with open(repo_index_path, "w") as f:
             f.write("\n".join(repo_index))
 
