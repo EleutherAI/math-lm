@@ -7,7 +7,7 @@
 *.hf
 **/data_jsonl
 **/meta_json
-!**/meta_json/stats.json
+!proof-pile-v2/source_code/meta_json/stats.json
 
 # tex gitignore
 ## Core latex/pdflatex auxiliary files:
