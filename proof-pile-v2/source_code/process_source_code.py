@@ -113,7 +113,7 @@ def r_filter(example):
 
 
 def maple_filter(example):
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
+    if len(example["content"].encode("utf-8")) > 100_000: # TEXT_MAX_SIZE:
         return False
 
     if numerical_density(example) > .5: 
@@ -452,17 +452,13 @@ def main(args):
 
         print("calculating tokens...")
 
-        if lang != "python":
-            ds = ds.map(
-                token_length,
-                batched=True,
-                batch_size=1000,
-                num_proc=NUM_PROC,
-                load_from_cache_file=False,
-            )
-        else:
-            # for whatever reason, can't get python tokenization working
-            ds = ds.map(lambda x: {"tokens": 0}, **filter_kwargs)
+        ds = ds.map(
+            token_length,
+            batched=True,
+            batch_size=1000,
+            num_proc=NUM_PROC,
+            load_from_cache_file=False,
+        )
         print("DONE CALCULATING TOKENS")
 
         for x in islice(ds, 1):
