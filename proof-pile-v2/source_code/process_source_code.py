@@ -55,6 +55,7 @@ SAVE_BATCH_SIZE = 50_000
 SAVE_DIR = "stack-code"
 
 TEXT_MAX_SIZE = 1048575 # in bytes
+MAX_NUMERICAL_DENSITY = .5
 
 DATA_DIRS = [
     # numerical/statistical computing
@@ -83,14 +84,26 @@ def numerical_density(ex):
     ntoks = sum(txt.count(c) for c in "0123456789")
     return ntoks / len(txt)
 
+def standard_filter(
+        example, 
+        max_numerical_density=MAX_NUMERICAL_DENSITY, 
+        text_max_size=TEXT_MAX_SIZE
+):
+    """
+    Byte length and numerical density filter that is repeated throughout
+    this script
+    """
+    if len(example["content"].encode("utf-8")) > text_max_size:
+        return False
+    elif numerical_density(example) > max_numerical_density: 
+        return False
+    else: 
+        return True
 
 
 is_reference_design_rexp = re.compile(r"Requirement\s+\{\s+Identifier")
 def r_filter(example):
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-
-    if numerical_density(example) > .5: 
+    if not standard_filter(example): 
         return False
 
     is_resource_fork = "/* Resource fork" in example["content"]
@@ -113,31 +126,29 @@ def r_filter(example):
 
 
 def maple_filter(example):
-    if len(example["content"].encode("utf-8")) > 100_000: # TEXT_MAX_SIZE:
-        return False
-
-    if numerical_density(example) > .5: 
+    if not standard_filter(example, text_max_size=100_000): 
         return False
 
     return "<?xml" != example["content"][:5]
 
 
 def gap_filter(example): 
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-    elif numerical_density(example) > 0.5: 
-        return False
-    else: 
-        return True
+    return standard_filter(example)
 
+def lean_filter(example): 
+    return standard_filter(example)
+
+def isabelle_filter(example): 
+    return standard_filter(example)
 
 def py_filter(example):
     text = example["content"]
-
-    if len(text.encode("utf-8")) > TEXT_MAX_SIZE:
+    
+    if not standard_filter(example): 
         return False
-
-    if numerical_density(example) > .5: 
+    
+    # removes notebooks and jsons
+    if text.strip()[0]="{": 
         return False
 
     keywords = []
@@ -157,10 +168,7 @@ def py_filter(example):
 
 
 def c_filter(example):
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-
-    if numerical_density(example) > .5: 
+    if not standard_filter(example):
         return False
 
     text = example["content"]
@@ -176,10 +184,7 @@ def c_filter(example):
 
 
 def cpp_filter(example):
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-
-    if numerical_density(example) > .5: 
+    if not standard_filter(example): 
         return False
 
     text = example["content"]
@@ -271,10 +276,7 @@ def julia_filter_strict(ex):
 
 
 def tex_filter_rexp(example, rexp):
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-
-    if numerical_density(example) > .5: 
+    if not standard_filter(example): 
         return False
 
     if example["ext"] != "tex":
@@ -430,6 +432,10 @@ def main(args):
             ds = ds.filter(maple_filter, **filter_kwargs)
         elif lang == "gap": 
             ds = ds.filter(gap_filter, **filter_kwargs)
+        elif lang == "lean": 
+            ds = ds.filter(lean_filter, **filter_kwargs)
+        elif lang == "isabelle": 
+            ds = ds.filter(isabelle_filter, **filter_kwargs)
         elif lang == "python":
             ds = ds.filter(py_filter, **filter_kwargs)
         elif lang == "c":
