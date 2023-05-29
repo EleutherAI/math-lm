@@ -1,38 +1,38 @@
 {
   "r": {
-    "files": 38330,
-    "size": 185937788,
-    "tokens": 57895536
+    "files": 37932,
+    "size": 180186984,
+    "tokens": 54834128
   },
   "maple": {
-    "files": 1215,
-    "size": 14104336,
-    "tokens": 6893326
+    "files": 1185,
+    "size": 4322534,
+    "tokens": 1594059
   },
   "gap": {
-    "files": 1124,
-    "size": 12396958,
-    "tokens": 4922132
+    "files": 1102,
+    "size": 8553863,
+    "tokens": 2857727
   },
   "lean": {
-    "files": 16891,
-    "size": 95102762,
-    "tokens": 32674815
+    "files": 16886,
+    "size": 95090798,
+    "tokens": 32667567
   },
   "isabelle": {
-    "files": 5086,
-    "size": 90591316,
-    "tokens": 29409547
+    "files": 5074,
+    "size": 90555528,
+    "tokens": 29397915
   },
   "python": {
-    "files": 2074467,
-    "size": 17252583522,
-    "tokens": 0
+    "files": 2070778,
+    "size": 17053213774,
+    "tokens": 4366419696
   },
   "jupyter-notebook": {
-    "files": 22741,
-    "size": 3909832722,
-    "tokens": 278468966
+    "files": 22739,
+    "size": 3909793850,
+    "tokens": 157175568
   },
   "julia": {
     "files": 295841,
@@ -40,18 +40,18 @@
     "tokens": 418501919
   },
   "c": {
-    "files": 5449,
-    "size": 57905888,
-    "tokens": 17546595
+    "files": 5432,
+    "size": 57514892,
+    "tokens": 17380293
   },
   "cpp": {
-    "files": 238498,
-    "size": 2937921008,
-    "tokens": 783013022
+    "files": 233157,
+    "size": 2705267764,
+    "tokens": 695986442
   },
   "tex": {
-    "files": 137647,
-    "size": 2072934135,
-    "tokens": 613951850
+    "files": 137578,
+    "size": 2069185070,
+    "tokens": 612121909
   }
 }

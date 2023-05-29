@@ -184,7 +184,7 @@ def c_filter(example):
 
 
 def cpp_filter(example):
-    if not standard_filter(example): 
+    if not standard_filter(example, max_numerical_density=0.1): 
         return False
 
     text = example["content"]
@@ -276,7 +276,7 @@ def julia_filter_strict(ex):
 
 
 def tex_filter_rexp(example, rexp):
-    if not standard_filter(example): 
+    if not standard_filter(example, text_max_size=10_000_000): 
         return False
 
     if example["ext"] != "tex":
