@@ -148,7 +148,7 @@ def py_filter(example):
         return False
     
     # removes notebooks and jsons
-    if text.strip()[0]="{": 
+    if text.strip()[0] == "{": 
         return False
 
     keywords = []
@@ -344,6 +344,10 @@ def _filter_cell_output(output):
         return True
     return False
 
+# regular expression from https://stackoverflow.com/questions/44227270/regex-to-parse-image-link-in-markdown
+markdown_image_rexp = re.compile(r'!\[[^\]]*\]\((?P<filename>.*?)(?=\"|\))(?P<optionalpart>\".*\")?\)')
+html_image_rexp = re.compile(r'<img[^>]*>')
+html_other_rexp = re.compile(r'<video.*?</video>|<script.*?</script>|<iframe.*?</iframe>', re.DOTALL)
 
 def process_jupyter_notebook(example):
     try:
@@ -364,6 +368,13 @@ def process_jupyter_notebook(example):
         # Convert to Markdown
         exporter = MarkdownExporter()
         body, resources = exporter.from_notebook_node(notebook)
+
+        # remove markdown images 
+        body = re.sub(markdown_image_rexp, '', body)
+        # remove unwanted html elements
+        body = re.sub(html_image_rexp, '', body)
+        body = re.sub(html_other_rexp, '', body)
+
         example["content"] = body
         example["converted"] = True
 
