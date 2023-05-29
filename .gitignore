@@ -10,6 +10,9 @@ proof-pile-v2/source_code/stack-code/*/
 *.jsonl.gz
 *.hf
 
+# Don't save huggingface cache
+.cache
+
 # tex gitignore
 ## Core latex/pdflatex auxiliary files:
 *.aux
