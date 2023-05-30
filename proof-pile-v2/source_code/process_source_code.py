@@ -66,6 +66,8 @@ DATA_DIRS = [
     # formal math
     "lean",
     "isabelle",
+    "idris", 
+    "agda",
     # imperative languages
     "python",
     "jupyter-notebook",
@@ -139,6 +141,12 @@ def lean_filter(example):
     return standard_filter(example)
 
 def isabelle_filter(example): 
+    return standard_filter(example)
+
+def idris_filter(example): 
+    return standard_filter(example)
+
+def agda_filter(example): 
     return standard_filter(example)
 
 def py_filter(example):
@@ -445,6 +453,10 @@ def main(args):
             ds = ds.filter(gap_filter, **filter_kwargs)
         elif lang == "lean": 
             ds = ds.filter(lean_filter, **filter_kwargs)
+        elif lang == "idris": 
+            ds = ds.filter(idris_filter, **filter_kwargs)
+        elif lang == "agda": 
+            ds = ds.filter(agda_filter, **filter_kwargs)
         elif lang == "isabelle": 
             ds = ds.filter(isabelle_filter, **filter_kwargs)
         elif lang == "python":
