@@ -12,6 +12,7 @@ import ndjson
 import os
 import tiktoken
 from tqdm import tqdm
+from collections import Counter
 
 
 def _unzip(f_gz):
@@ -41,6 +42,8 @@ def filter_coq(example):
 
 
 def _has_coq_keyword(example):
+    # Both Coq and Verilog have .v files; we only want Coq files.
+    # Rough heuristic of whether this is a Coq file.
     kws = {'Theorem', 'Proof', 'Qed', 'Inductive', 'Definition', 'Fixpoint'}
     for k in kws:
         if k in example['content']:
@@ -49,6 +52,8 @@ def _has_coq_keyword(example):
 
 
 def _has_verilog_keyword(example):
+    # Both Coq and Verilog have .v files; we only want Coq files.
+    # Rough heuristic of whether this is a Verilog file.
     kws = {'pragma', 'endmodule', 'posedge', 'negedge', 'wire'}
     for k in kws:
         if k in example['content']:
@@ -64,26 +69,28 @@ def _filter(examples, filter_fn):
     return filtered
 
 
-def filter_duplicate_repos(examples):
-    from collections import Counter
-    seen_repo = set()
-    fullnames = set()
+def filter_duplicate_repos(examples, seen_repo, repo_names):
+    # BigQuery picks up multiple repo copies; e.g {user1}/coq and {user2}/coq.
+    # We group the repos by exact string match, and keep the repo copy with the most files.
+    #
+    # NOTE: doesn't account for non-exact-string matches (e.g. {user1}/repo {user2}/my_repo).
+    # NOTE: we select the repo copy greedily by shard. For instance, a repo with more files
+    #       may occur in shard 2, but we will use the most common copy from shard 1.
 
-    # sort by number of files in the repo. We'll keep the copy
+    # Sort by number of files associated with the repo. We'll keep the copy
     # that has the highest number of files.
-    fullname_counts = Counter([x['repo_name'] for x in examples]).most_common()
-    for fullname, count in fullname_counts:
-        author, repo = fullname.split('/')
+    repo_name_counts = Counter([x['repo_name'] for x in examples]).most_common()
+    for repo_name, count in repo_name_counts:
+        author, repo = repo_name.split('/')
         if repo not in seen_repo:
             seen_repo.add(repo)
-            fullnames.add(fullname)
+            repo_names.add(repo_name)
 
-    # now we only keep examples with a retained fullname
     filtered = []
     for example in examples:
-        if example['repo_name'] in fullnames:
+        if example['repo_name'] in repo_names:
             filtered.append(example)
-    return filtered
+    return filtered, seen_repo, repo_names
 
 
 def token_length(examples):
@@ -103,6 +110,8 @@ def main(args):
         print("==== %s" % lang)
         files = glob.glob('%s/original/%s/*.gz' % (args.input_dir, lang))
 
+        seen_repo = set()
+        repo_names = set()
         for shard, f_gz in tqdm(enumerate(files), total=len(files)):
             # Unzip .gz into .jsonl
             f_jsonl = _unzip(f_gz)
@@ -115,7 +124,10 @@ def main(args):
             else:
                 filter_fn = lambda x: True
 
-            filtered = filter_duplicate_repos(_filter(raw, filter_fn))
+            filtered = _filter(raw, filter_fn)
+            filtered, seen_repo, repo_names = filter_duplicate_repos(
+                filtered, seen_repo, repo_names
+            )
             num_tokens = token_length(filtered)
 
             # Save shard
