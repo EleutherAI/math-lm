@@ -1,8 +1,7 @@
 """
-To reproduce, first run a query on BigQuery.
-See `bigquery-code/original/coq/query.sql` for an example.
-
-Then export the BigQuery table into .jsonl.gz files, which are the input to this script.
+This script processes and filters .jsonl.gz files from a bigquery query.
+To make the query and get the .jsonl.gz files, see `run_bigquery.py`.
+See `bigquery-code/original/coq/query.sql` for an example query.
 """
 
 import glob
