@@ -1,14 +1,13 @@
 # Don't save training data
 *.out
 *.err
-proof-pile-v2/issues_diffs/raw_pilev2/*
-proof-pile-v2/source_code/stack-code/*index
-proof-pile-v2/source_code/stack-code/*/
-/proof-pile-v2/source_code/analysis/
 *.jsonl
 *.jsonl.zst
 *.jsonl.gz
 *.hf
+**/data_jsonl
+**/meta_json
+!proof-pile-v2/source_code/meta_json/stats.json
 
 # tex gitignore
 ## Core latex/pdflatex auxiliary files:
