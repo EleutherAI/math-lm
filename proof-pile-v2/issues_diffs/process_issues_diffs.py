@@ -31,7 +31,7 @@ def main(args):
     Path(test_path).mkdir(exist_ok=True, parents=True)
 
     # build index
-    index_dir = "../source_code/stack-code/"
+    index_dir = "../source_code/meta_json/"
     index = []
 
     print("loading index...")

@@ -11,6 +11,6 @@ Instructions for each of the subsets are given below:
   has a `-c` argument. Note that the issues and diffs subsets must be built AFTER `source_code`.
 - `source_code`: Run `python process_source_code.py -c $NUM_CPUS` to build all language subsets. To build only the
   subsets for some specific languages, run `python process_source_code.py -c $NUM_CPUS -l python cpp`, for example. The
-  preprocessed data will be saved to `stack-code/{split}`. The rest of the files in the `stack-code` directory are
+  preprocessed data will be saved to `data_jsonl`. The generated files in the `meta_json` directory are
   metadata useful for analysis and building the issues and diffs dataset. 
 - `stack_exchange`: Run `python fetch_stack_exchange.py`. Data is saved in the `data_jsonl` directory.
