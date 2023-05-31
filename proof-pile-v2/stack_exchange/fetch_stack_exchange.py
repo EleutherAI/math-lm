@@ -192,11 +192,10 @@ def text_of_post(post):
 
     answered = False
     for answer in post.Answers:
-        if answer.Score >= 2:
-            answered = True
-            text += (
-                f"\n\nREPLY [{answer.Score} votes]: {strip_html(answer.Body).strip()}"
-            )
+        answered = True
+        text += (
+            f"\n\nREPLY [{answer.Score} votes]: {strip_html(answer.Body).strip()}"
+        )
 
     return text, post.Score, post.Id, answered
 
@@ -220,26 +219,25 @@ def get_and_format(url, save_dir):
     qs_texts = [text_of_post(qs[key]) for key in tqdm(qs.keys())]
 
     for post, score, eyed, answered in tqdm(qs_texts):
-        if answered:
-            c = random.random()
-            if c > 2*VAL_RATE:
-                shard_path = os.path.join(save_dir, "stack_exchange.jsonl")
-            elif c > VAL_RATE:
-                shard_path = os.path.join(save_dir, "stack_exchange_dev.jsonl")
-            else:
-                shard_path = os.path.join(save_dir, "stack_exchange_test.jsonl")
+        c = random.random()
+        if c > 2*VAL_RATE:
+            shard_path = os.path.join(save_dir, "stack_exchange.jsonl")
+        elif c > VAL_RATE:
+            shard_path = os.path.join(save_dir, "stack_exchange_dev.jsonl")
+        else:
+            shard_path = os.path.join(save_dir, "stack_exchange_test.jsonl")
 
-            with open(shard_path, "a+") as f:
-                instance = {
-                            "text": post,
-                            "meta": {
-                                "set_name": "stack_exchange",
-                                "score": score,
-                                "question_id": eyed,
-                            },
-                        }
-                f.write(json.dumps(instance))
-                f.write("\n")
+        with open(shard_path, "a+") as f:
+            instance = {
+                        "text": post,
+                        "meta": {
+                            "set_name": "stack_exchange",
+                            "score": score,
+                            "question_id": eyed,
+                        },
+                    }
+            f.write(json.dumps(instance))
+            f.write("\n")
 
     # os.system("gzip " + " ".join(os.path.join(save_dir, x)
         # for x in ("train.jsonl", "val.jsonl")))
