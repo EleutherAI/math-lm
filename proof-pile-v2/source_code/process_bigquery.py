@@ -11,6 +11,8 @@ import shutil
 import ndjson
 import os
 import tiktoken
+import hashlib
+import json
 from tqdm import tqdm
 from collections import Counter
 
@@ -33,6 +35,12 @@ def _delete(f_jsonl):
 def _save(filtered, lang, input_dir, shard):
     f_out_jsonl = '%s/processed/%s-%d.jsonl' % (input_dir, lang, shard)
     ndjson.dump(filtered, open(f_out_jsonl, 'w'))
+
+
+def _save_stats(stats, lang, input_dir):
+    f_out = '%s/stats-%s.json' % (input_dir, lang)
+    with open(f_out, 'w') as f:
+        json.dump(stats, f)
 
 
 def filter_coq(example):
@@ -93,6 +101,32 @@ def filter_duplicate_repos(examples, seen_repo, repo_names):
     return filtered, seen_repo, repo_names
 
 
+def deduplicate(examples, seen_chunks, chunk_size=1024):
+    # "Chunk-based" deduplication. Iterate over consecutive chunks
+    # in a document. If a chunk appears exactly in another document,
+    # we consider the documents to be duplicates of one another.
+    #
+    # When a duplicate is detected (i.e., when a chunk appears in
+    # more than one document), we keep only the first document.
+    duped = set()
+    for docid, example in enumerate(examples):
+        content = example['content']
+        for chunk_start in range(0, len(content), chunk_size):
+            chunk = content[chunk_start:chunk_start + chunk_size]
+            if (len(chunk) == chunk_size) or (len(chunk) == len(content)):
+                h = hashlib.new('sha256')
+                h.update(chunk.encode())
+                h_chunk = h.hexdigest()
+                if h_chunk in seen_chunks:
+                    duped.add(docid)
+                seen_chunks.add(h_chunk)
+    filtered = []
+    for docid, example in enumerate(examples):
+        if docid not in duped:
+            filtered.append(example)
+    return filtered, seen_chunks
+
+
 def token_length(examples):
     tokenizer = tiktoken.get_encoding("cl100k_base")
     tokens = [
@@ -103,6 +137,14 @@ def token_length(examples):
     return sum(tokens)
 
 
+def get_language_filter(lang):
+    if lang == 'coq':
+        filter_fn = filter_coq
+    else:
+        filter_fn = lambda x: True
+    return filter_fn
+
+
 def main(args):
     langs = args.langs
     stats = {'original': 0, 'filtered': 0, 'tokens': 0}
@@ -110,23 +152,23 @@ def main(args):
         print("==== %s" % lang)
         files = glob.glob('%s/original/%s/*.gz' % (args.input_dir, lang))
 
-        seen_repo = set()
         repo_names = set()
+        seen_repo = set()
+        seen_chunks = set()
         for shard, f_gz in tqdm(enumerate(files), total=len(files)):
             # Unzip .gz into .jsonl
             f_jsonl = _unzip(f_gz)
             raw = _read(f_jsonl)
             _delete(f_jsonl)  # delete large file (we still have the .gz)
 
-            # Apply filter
-            if lang == 'coq':
-                filter_fn = filter_coq
-            else:
-                filter_fn = lambda x: True
-
+            # Apply filters
+            filter_fn = get_language_filter(lang)
             filtered = _filter(raw, filter_fn)
             filtered, seen_repo, repo_names = filter_duplicate_repos(
                 filtered, seen_repo, repo_names
+            )
+            filtered, seen_chunks = deduplicate(
+                filtered, seen_chunks, chunk_size=args.dedup_chunk_size
             )
             num_tokens = token_length(filtered)
 
@@ -139,6 +181,7 @@ def main(args):
 
         for k, v in stats.items():
             print('', k, v, sep='\t')
+        _save_stats(stats, lang, args.input_dir)
 
 
 if __name__ == '__main__':
@@ -146,6 +189,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input-dir', type=str, default='bigquery-code')
     parser.add_argument('--langs', type=str, default=['coq'], nargs='+')
+    parser.add_argument('--dedup-chunk-size', type=int, default=2048)
 
     args = parser.parse_args()
     main(args)
