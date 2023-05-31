@@ -52,10 +52,12 @@ alphanum_fraction
 """
 
 SAVE_BATCH_SIZE = 50_000
+EVAL_RATIO=0.005
 DATA_DIR = "data_jsonl"
 META_DIR = "meta_json"
 
 TEXT_MAX_SIZE = 1048575 # in bytes
+MAX_NUMERICAL_DENSITY = .5
 
 DATA_DIRS = [
     # numerical/statistical computing
@@ -66,6 +68,8 @@ DATA_DIRS = [
     # formal math
     "lean",
     "isabelle",
+    "idris", 
+    "agda",
     # imperative languages
     "python",
     "jupyter-notebook",
@@ -85,14 +89,26 @@ def numerical_density(ex):
     ntoks = sum(txt.count(c) for c in "0123456789")
     return ntoks / len(txt)
 
+def standard_filter(
+        example, 
+        max_numerical_density=MAX_NUMERICAL_DENSITY, 
+        text_max_size=TEXT_MAX_SIZE
+):
+    """
+    Byte length and numerical density filter that is repeated throughout
+    this script
+    """
+    if len(example["content"].encode("utf-8")) > text_max_size:
+        return False
+    elif numerical_density(example) > max_numerical_density: 
+        return False
+    else: 
+        return True
 
 
 is_reference_design_rexp = re.compile(r"Requirement\s+\{\s+Identifier")
 def r_filter(example):
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-
-    if numerical_density(example) > .5: 
+    if not standard_filter(example): 
         return False
 
     is_resource_fork = "/* Resource fork" in example["content"]
@@ -115,31 +131,35 @@ def r_filter(example):
 
 
 def maple_filter(example):
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-
-    if numerical_density(example) > .5: 
+    if not standard_filter(example, text_max_size=100_000): 
         return False
 
     return "<?xml" != example["content"][:5]
 
 
 def gap_filter(example): 
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-    elif numerical_density(example) > 0.5: 
-        return False
-    else: 
-        return True
+    return standard_filter(example)
 
+def lean_filter(example): 
+    return standard_filter(example)
+
+def isabelle_filter(example): 
+    return standard_filter(example)
+
+def idris_filter(example): 
+    return standard_filter(example)
+
+def agda_filter(example): 
+    return standard_filter(example)
 
 def py_filter(example):
     text = example["content"]
-
-    if len(text.encode("utf-8")) > TEXT_MAX_SIZE:
+    
+    if not standard_filter(example): 
         return False
-
-    if numerical_density(example) > .5: 
+    
+    # removes notebooks and jsons
+    if text.strip()[0] == "{": 
         return False
 
     keywords = []
@@ -159,10 +179,7 @@ def py_filter(example):
 
 
 def c_filter(example):
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-
-    if numerical_density(example) > .5: 
+    if not standard_filter(example):
         return False
 
     text = example["content"]
@@ -178,10 +195,7 @@ def c_filter(example):
 
 
 def cpp_filter(example):
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-
-    if numerical_density(example) > .5: 
+    if not standard_filter(example, max_numerical_density=0.1): 
         return False
 
     text = example["content"]
@@ -273,10 +287,7 @@ def julia_filter_strict(ex):
 
 
 def tex_filter_rexp(example, rexp):
-    if len(example["content"].encode("utf-8")) > TEXT_MAX_SIZE:
-        return False
-
-    if numerical_density(example) > .5: 
+    if not standard_filter(example, text_max_size=10_000_000): 
         return False
 
     if example["ext"] != "tex":
@@ -344,6 +355,10 @@ def _filter_cell_output(output):
         return True
     return False
 
+# regular expression from https://stackoverflow.com/questions/44227270/regex-to-parse-image-link-in-markdown
+markdown_image_rexp = re.compile(r'!\[[^\]]*\]\((?P<filename>.*?)(?=\"|\))(?P<optionalpart>\".*\")?\)')
+html_image_rexp = re.compile(r'<img[^>]*>')
+html_other_rexp = re.compile(r'<video.*?</video>|<script.*?</script>|<iframe.*?</iframe>', re.DOTALL)
 
 def process_jupyter_notebook(example):
     try:
@@ -364,6 +379,13 @@ def process_jupyter_notebook(example):
         # Convert to Markdown
         exporter = MarkdownExporter()
         body, resources = exporter.from_notebook_node(notebook)
+
+        # remove markdown images 
+        body = re.sub(markdown_image_rexp, '', body)
+        # remove unwanted html elements
+        body = re.sub(html_image_rexp, '', body)
+        body = re.sub(html_other_rexp, '', body)
+
         example["content"] = body
         example["converted"] = True
 
@@ -432,6 +454,14 @@ def main(args):
             ds = ds.filter(maple_filter, **filter_kwargs)
         elif lang == "gap": 
             ds = ds.filter(gap_filter, **filter_kwargs)
+        elif lang == "lean": 
+            ds = ds.filter(lean_filter, **filter_kwargs)
+        elif lang == "idris": 
+            ds = ds.filter(idris_filter, **filter_kwargs)
+        elif lang == "agda": 
+            ds = ds.filter(agda_filter, **filter_kwargs)
+        elif lang == "isabelle": 
+            ds = ds.filter(isabelle_filter, **filter_kwargs)
         elif lang == "python":
             ds = ds.filter(py_filter, **filter_kwargs)
         elif lang == "c":
@@ -454,17 +484,13 @@ def main(args):
 
         print("calculating tokens...")
 
-        if lang != "python":
-            ds = ds.map(
-                token_length,
-                batched=True,
-                batch_size=1000,
-                num_proc=NUM_PROC,
-                load_from_cache_file=False,
-            )
-        else:
-            # for whatever reason, can't get python tokenization working
-            ds = ds.map(lambda x: {"tokens": 0}, **filter_kwargs)
+        ds = ds.map(
+            token_length,
+            batched=True,
+            batch_size=1000,
+            num_proc=NUM_PROC,
+            load_from_cache_file=False,
+        )
         print("DONE CALCULATING TOKENS")
 
         for x in islice(ds, 1):
@@ -491,7 +517,7 @@ def main(args):
         Path(META_DIR).mkdir(exist_ok=True)
 
         # train, validation, test, spit
-        test_len = max(int(0.005 * len(ds)), 1)
+        test_len = max(int(EVAL_RATIO * len(ds)), 1)
         train = ds.select(range(len(ds) - 2 * test_len))
         validation = ds.select(range(len(ds) - 2 * test_len, len(ds) - test_len))
         test = ds.select(range(len(ds) - test_len, len(ds)))

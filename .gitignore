@@ -7,7 +7,11 @@
 *.hf
 **/data_jsonl
 **/meta_json
+**/raw_pilev2/
 !proof-pile-v2/source_code/meta_json/stats.json
+
+# Don't save huggingface cache
+.cache
 
 # tex gitignore
 ## Core latex/pdflatex auxiliary files:

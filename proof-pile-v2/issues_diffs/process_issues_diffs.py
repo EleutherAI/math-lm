@@ -13,6 +13,13 @@ from tqdm import tqdm
 
 import ast
 
+EVAL_RATIO=0.005
+TEXT_MAX_SIZE = 10_000_000
+
+def diff_is_notebook(example): 
+    return "ipynb" == ast.literal_eval(example["meta"])["lang"]
+
+
 def main(args):
     save_dir = "data_jsonl"
     train_path = os.path.join(save_dir, "train/")
@@ -24,10 +31,10 @@ def main(args):
     Path(test_path).mkdir(exist_ok=True, parents=True)
 
     # build index
-    index_dir = "../source_code/stack-code/"
+    index_dir = "../source_code/meta_json/"
     index = []
 
-    print("loading and dedupping index...")
+    print("loading index...")
     if args.sample:
         index = ["google/closure-compiler", "openstack/tempest"]
     else:
@@ -36,9 +43,10 @@ def main(args):
                 with open(os.path.join(index_dir, name)) as f:
                     index += [x.strip() for x in f.readlines()]
 
+    print("deduping index...")
     index = set(index)
 
-
+    print("loading data...")
     if args.sample:
         issues = load_dataset(
             "CarperAI/pile-v2-small-filtered",
@@ -71,7 +79,7 @@ def main(args):
         num_proc=args.cpus,
     )
     filtered_diffs = diffs.filter(
-        lambda x: ast.literal_eval(x["meta"])["repo_name"] in index, 
+        lambda x: ast.literal_eval(x["meta"])["repo_name"] in index and not diff_is_notebook(x), 
         num_proc=args.cpus
     )
 
@@ -79,7 +87,10 @@ def main(args):
         seed=42
     )
 
-    test_len = max(int(0.005 * len(ds)), 1)
+    print("filtering by length")
+    ds = ds.filter(lambda x: len(x["text"].encode('utf-8'))<TEXT_MAX_SIZE)
+
+    test_len = max(int(EVAL_RATIO * len(ds)), 1)
 
     train = ds.select(range(len(ds) - 2 * test_len))
     validation = ds.select(range(len(ds) - 2 * test_len, len(ds) - test_len))
