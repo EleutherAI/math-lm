@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 import ast
 
+EVAL_RATIO=0.005
 TEXT_MAX_SIZE = 10_000_000
 
 def diff_is_notebook(example): 
@@ -89,7 +90,7 @@ def main(args):
     print("filtering by length")
     ds = ds.filter(lambda x: len(x["text"].encode('utf-8'))<TEXT_MAX_SIZE)
 
-    test_len = max(int(0.005 * len(ds)), 1)
+    test_len = max(int(EVAL_RATIO * len(ds)), 1)
 
     train = ds.select(range(len(ds) - 2 * test_len))
     validation = ds.select(range(len(ds) - 2 * test_len, len(ds) - test_len))

@@ -53,6 +53,7 @@ alphanum_fraction
 
 SAVE_BATCH_SIZE = 50_000
 SAVE_DIR = "stack-code"
+EVAL_RATIO=0.005
 
 TEXT_MAX_SIZE = 1048575 # in bytes
 MAX_NUMERICAL_DENSITY = .5
@@ -513,7 +514,7 @@ def main(args):
         Path(os.path.join(SAVE_DIR, "test/")).mkdir(parents=True, exist_ok=True)
 
         # train, validation, test, spit
-        test_len = max(int(0.005 * len(ds)), 1)
+        test_len = max(int(EVAL_RATIO * len(ds)), 1)
         train = ds.select(range(len(ds) - 2 * test_len))
         validation = ds.select(range(len(ds) - 2 * test_len, len(ds) - test_len))
         test = ds.select(range(len(ds) - test_len, len(ds)))

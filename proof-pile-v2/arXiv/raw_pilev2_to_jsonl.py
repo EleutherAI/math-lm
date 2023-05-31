@@ -8,6 +8,8 @@ import code
 from pathlib import Path
 import ast
 
+EVAL_RATIO=0.005
+
 name = "arXiv"
 inpath = "raw_pilev2/arXiv"
 outdir = "data_jsonl"
@@ -21,7 +23,7 @@ def main(args):
     print("loading dataset from disk...")
     ds = datasets.load_from_disk(inpath, keep_in_memory=False)
 
-    test_len = max(int(.005 * len(ds)), 1)
+    test_len = max(int(EVAL_RATIO * len(ds)), 1)
 
     train = ds.select(range(len(ds)-2*test_len))
     print("TRAIN", len(train))

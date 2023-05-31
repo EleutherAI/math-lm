@@ -201,7 +201,7 @@ def text_of_post(post):
 
 
 def get_and_format(url, save_dir):
-    VAL_RATE = 0.005
+    EVAL_RATIO = 0.005
     Path(save_dir).mkdir(exist_ok=True, parents=True)
     archive_path = os.path.join(save_dir, "archive.7z")
     os.system(f"wget -O {archive_path} {url}")
@@ -220,9 +220,9 @@ def get_and_format(url, save_dir):
 
     for post, score, eyed, answered in tqdm(qs_texts):
         c = random.random()
-        if c > 2*VAL_RATE:
+        if c > 2*EVAL_RATIO:
             shard_path = os.path.join(save_dir, "stack_exchange.jsonl")
-        elif c > VAL_RATE:
+        elif c > EVAL_RATIO:
             shard_path = os.path.join(save_dir, "stack_exchange_dev.jsonl")
         else:
             shard_path = os.path.join(save_dir, "stack_exchange_test.jsonl")
