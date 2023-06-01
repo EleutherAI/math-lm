@@ -13,7 +13,20 @@ EVAL_RATIO=0.005
 name = "arXiv"
 inpath = "raw_pilev2/arXiv"
 outdir = "data_jsonl"
-shard_size = 100_000
+shard_size = 10_000
+# "id":"0","check_char_repetition_criteria":0.0,"check_flagged_words_criteria":0.0,"check_stop_word_ratio_criteria":0.0}
+columns_to_remove = [
+        "id", 
+        "check_char_repetition_criteria", 
+        "check_flagged_words_criteria", 
+        "check_stop_word_ratio_criteria", 
+]
+
+def fix_meta(example): 
+    meta = ast.literal_eval(example["meta"])
+    meta["id"] = example["id"]
+    return {"meta": meta}
+
 
 def main(args): 
     Path(os.path.join(outdir, "train")).mkdir(exist_ok=True, parents=True)
@@ -35,14 +48,15 @@ def main(args):
         print(f"saving shard with dataset indices {left}-{left+shard_size}")
         # note we have to convert "meta" column from string to dict
         train.select(range(left, min(len(train), left+shard_size))).map(
-            lambda x: {"meta": ast.literal_eval(x["meta"])}, 
-            num_proc=args.cpus
+            fix_meta, 
+            num_proc=args.cpus,
+        ).remove_columns(
+                columns_to_remove
         ).to_json(
-                os.path.join(outdir, "train", f"{name}_{str(shard).zfill(2)}.jsonl"), 
+                os.path.join(outdir, "train", f"{name}_{str(shard).zfill(3)}.jsonl"), 
                 lines=True,
                 num_proc=args.cpus,
         )
-        break
 
     # Validation and test
     validation = ds.select(range(len(ds)-2*test_len, len(ds)-test_len))
