@@ -20,6 +20,8 @@ import json
 
 import py7zr
 
+random.seed(92)
+
 """
 Author: E.W.Ayers
 
