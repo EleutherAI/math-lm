@@ -9,6 +9,7 @@ from pathlib import Path
 import ast
 
 EVAL_RATIO=0.005
+SEED=57
 
 name = "arXiv"
 inpath = "raw_pilev2/arXiv"
@@ -22,6 +23,10 @@ def main(args):
 
     print("loading dataset from disk...")
     ds = datasets.load_from_disk(inpath, keep_in_memory=False)
+
+    # shuffle, just in case upstream data is ordered. Note this makes script way slower, 
+    # since we're no longer accessing a contiguous disk location.
+    ds = ds.shuffle(seed=SEED)
 
     test_len = max(int(EVAL_RATIO * len(ds)), 1)
 

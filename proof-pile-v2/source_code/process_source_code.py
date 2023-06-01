@@ -518,6 +518,9 @@ def main(args):
 
         # train, validation, test, spit
         test_len = max(int(EVAL_RATIO * len(ds)), 1)
+        # shuffle, just in case there's some ordering to upstream data. 
+        # note this slows down the script, since we're not accessing contiguous memory.
+        ds = ds.shuffle(seed=74)
         train = ds.select(range(len(ds) - 2 * test_len))
         validation = ds.select(range(len(ds) - 2 * test_len, len(ds) - test_len))
         test = ds.select(range(len(ds) - test_len, len(ds)))
