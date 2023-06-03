@@ -2,11 +2,14 @@ import sys
 import os
 import json
 import datasets 
+from datasets import disable_caching
 import argparse
 from tqdm import tqdm
 import code
 from pathlib import Path
 import ast
+
+disable_caching()
 
 EVAL_RATIO=0.005
 
@@ -64,13 +67,23 @@ def main(args):
     print("VALIDATION", len(validation))
     print("TEST", len(test))
 
-    validation.to_json(
+    validation.map(
+            fix_meta, 
+            num_proc=args.cpus,
+        ).remove_columns(
+                columns_to_remove
+        ).to_json(
             os.path.join(outdir, "validation", f"{name}.jsonl"), 
             lines=True, 
             num_proc=args.cpus
     )
 
-    test.to_json(
+    test.map(
+            fix_meta, 
+            num_proc=args.cpus,
+        ).remove_columns(
+                columns_to_remove
+        ).to_json(
             os.path.join(outdir, "test", f"{name}.jsonl"), 
             lines=True, 
             num_proc=args.cpus
