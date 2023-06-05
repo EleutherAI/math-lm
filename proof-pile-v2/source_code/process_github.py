@@ -4,9 +4,12 @@ import hashlib
 from pathlib import Path
 from github import Github
 from tqdm import tqdm
+from datetime import datetime
 import ndjson
 import tiktoken
 import json
+import random
+import numpy as np
 
 
 GITHUB_ACCESS_TOKEN = os.environ['GITHUB_ACCESS_TOKEN']
@@ -123,6 +126,34 @@ def _save_repo_metadata(repos, lang, input_dir):
     f_out = '%s/repos-%s.jsonl' % (input_dir, lang)
     with open(f_out, 'w') as f:
         ndjson.dump(repos, f)
+
+
+def _save_splits(splits, out_dir, lang):
+    print("Saving split to disk...")
+    for split, examples in tqdm(splits.items(), total=len(splits)):
+        out_dir_ = os.path.join(out_dir, 'splits', split)
+        Path(out_dir_).mkdir(parents=True, exist_ok=True)
+        out_file = os.path.join(
+            out_dir_, '%s-%s.jsonl' % (split, lang)
+        )
+        with open(out_file, 'w') as f:
+            for example in examples:
+                f.write(json.dumps(example))
+                f.write('\n')
+
+
+def make_splits(examples, eval_ratio):
+    test_len = max(int(eval_ratio * len(examples)), 1)
+    perm = np.random.permutation(len(examples))
+    examples = [examples[i] for i in perm]
+    splits = {
+        'train': examples[:len(examples)-(2*test_len)],
+        'validation': examples[len(examples)-(2*test_len):len(examples)-test_len],
+        'test': examples[len(examples)-test_len:],
+    }
+    for k, v in splits.items():
+        print("%s length: %d" % (k, len(v)))
+    return splits
 
 
 def deduplicate(examples, chunk_size=2048):
@@ -249,11 +280,17 @@ def run(lang, file_pattern, filter_fn, limit, overwrite, dedup_chunk_size, out_d
     num_tokens = token_length(examples)
     print("\t%d tokens" % (num_tokens))
 
-    _save(examples, lang, out_dir, shard=0)
+    _save(examples, lang, out_dir, shard=0)  # extra copy before splitting; not strictly needed
+    _save_splits(
+        splits=make_splits(examples, args.eval_ratio),
+        out_dir=out_dir,
+        lang=lang
+    )
     _save_stats({
         'num_repos': args.limit,
         'num_examples': len(examples),
-        'num_tokens': num_tokens
+        'num_tokens': num_tokens,
+        'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     }, lang, out_dir)
 
 
@@ -268,6 +305,10 @@ def coq(args):
         out_dir=args.out_dir
     )
 
+def setup(args):
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+
 
 def main(args):
     if 'coq' in args.langs:
@@ -277,11 +318,14 @@ def main(args):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--limit', type=int, default=100)
+    parser.add_argument('--limit', type=int, default=250)
     parser.add_argument('--langs', type=str, default=['coq'], nargs='+')
     parser.add_argument('--dedup-chunk-size', type=int, default=2048)
     parser.add_argument('--overwrite', action='store_true')
     parser.add_argument('--out-dir', type=str, default='github-code')
+    parser.add_argument('--eval-ratio', type=int, default=0.05)
+    parser.add_argument('--seed', type=int, default=72)
 
     args = parser.parse_args()
+    setup(args)
     main(args)
