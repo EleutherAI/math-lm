@@ -11,8 +11,7 @@ Instructions for each of the subsets are given below:
 - `arXiv`: Same as above. 
 - `issues_diffs`: Run `download_from_pilev2.sh`, except the Python script is called `filter_issues_diffs.py`. It still
   has a `-c` argument. Note that the issues and diffs subsets must be built AFTER `source_code`.
-- `source_code`: Run `python process_source_code.py -c $NUM_CPUS` to build all language subsets. To build only the
-  subsets for some specific languages, run `python process_source_code.py -c $NUM_CPUS -l python cpp`, for example. The
-  preprocessed data will be saved to `data_jsonl`. The generated files in the `meta_json` directory are
-  metadata useful for analysis and building the issues and diffs dataset. 
+- `source_code`: Our source code comes from two sources
+    - Subset download from `bigcode/the-stack-dedup`: Run `python process_stack.py -c $NUM_CPUS` to build all language subsets. To build only the subsets for some specific languages, run `python process_stack.py -c $NUM_CPUS -l python cpp`, for example. The preprocessed data will be saved to `data_jsonl`. The generated files in the `meta_json` directory are metadata useful for analysis and building the issues and diffs dataset. 
+    - Subset downloaded directly through the Github rest API: Run `python process_github.py`, or for example `python process_github.py --langs coq`. The default output directory is `github-code`. 
 - `stack_exchange`: Run `python process_stack_exchange.py`. Data is saved in the `data_jsonl` directory.
