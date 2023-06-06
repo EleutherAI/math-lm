@@ -123,6 +123,11 @@ def _save_repo_metadata(repos, lang, output_dir):
     with open(f_out, 'w') as f:
         ndjson.dump(repos, f)
 
+    f_out = '%s/github_%s_index' % (output_dir, lang)
+    with open(f_out, 'w') as f:
+        for repo in repos:
+            f.write('%s/%s' % (repo['author'], repo['repo']))
+
 
 def _save_splits(splits, out_dir, lang, shard_size=50000):
     print("Saving split to disk...")
@@ -288,7 +293,6 @@ def run(lang, file_pattern, filter_fn, limit, overwrite, dedup_chunk_size, data_
         'num_repos': args.limit,
         'num_examples': len(examples),
         'num_tokens': num_tokens,
-        'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     }, lang, meta_dir)
 
 
