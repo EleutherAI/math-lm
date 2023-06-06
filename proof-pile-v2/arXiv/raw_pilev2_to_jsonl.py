@@ -54,11 +54,11 @@ def main(args):
             fix_meta, 
             num_proc=args.cpus,
         ).remove_columns(
-                columns_to_remove
+            columns_to_remove
         ).to_json(
-                os.path.join(outdir, "train", f"{name}_{str(shard).zfill(3)}.jsonl"), 
-                lines=True,
-                num_proc=args.cpus,
+            os.path.join(outdir, "train", f"{name}_{str(shard).zfill(3)}.jsonl"), 
+            lines=True,
+            num_proc=args.cpus,
         )
 
     # Validation and test
@@ -71,7 +71,7 @@ def main(args):
             fix_meta, 
             num_proc=args.cpus,
         ).remove_columns(
-                columns_to_remove
+            columns_to_remove
         ).to_json(
             os.path.join(outdir, "validation", f"{name}.jsonl"), 
             lines=True, 
@@ -82,7 +82,7 @@ def main(args):
             fix_meta, 
             num_proc=args.cpus,
         ).remove_columns(
-                columns_to_remove
+            columns_to_remove
         ).to_json(
             os.path.join(outdir, "test", f"{name}.jsonl"), 
             lines=True, 
