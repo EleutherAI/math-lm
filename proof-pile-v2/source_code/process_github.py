@@ -10,6 +10,8 @@ import tiktoken
 import json
 import random
 import numpy as np
+import backoff
+import subprocess
 
 
 GITHUB_ACCESS_TOKEN = os.environ['GITHUB_ACCESS_TOKEN']
@@ -18,7 +20,8 @@ TEXT_MAX_SIZE = 1048575  # in bytes
 MAX_NUMERICAL_DENSITY = .5
 
 
-def _get_dir_from_repo(author, repo, sha, repo_dir, save_path, overwrite):
+@backoff.on_exception(backoff.expo, subprocess.CalledProcessError)
+def _get_dir_from_repo(author, repo, sha, save_path, overwrite):
     if (not overwrite) and Path(save_path).exists():
         return
     Path(save_path).mkdir(parents=True, exist_ok=True)
@@ -27,14 +30,8 @@ def _get_dir_from_repo(author, repo, sha, repo_dir, save_path, overwrite):
         "https://github.com/" + author + "/" + repo + "/archive/" + sha + ".tar.gz"
     )
 
-    os.system("wget -O " + archive_path + " " + tarball_url)
-    os.system("tar -xzf " + archive_path + " -C " + save_path)
-
-    export_name = repo + "-" + sha
-    os.system(
-        "cp -r " + os.path.join(save_path, export_name, repo_dir, "*") + " " + save_path
-    )
-    os.system("rm -r " + os.path.join(save_path, export_name) + " " + archive_path)
+    subprocess.call(['wget', '-O', archive_path, tarball_url])
+    subprocess.call(['tar', '-xzf', archive_path, '-C', save_path])
 
 
 def _delete_files_except_pattern(path, pattern):
@@ -73,7 +70,6 @@ def get_repos(lang, limit, out_dir):
             'author': author,
             'repo': repo_name,
             'sha': _get_sha(repo),
-            'repo_dir': '',
             'save_path': '%s/%s/%s-%s' % (out_dir, lang, author, repo_name)
         }
         repositories.append(info)
@@ -108,38 +104,41 @@ def _filter(examples, filter_fn):
     return filtered
 
 
-def _save(filtered, lang, output_dir, shard):
-    out_dir = '%s/processed' % output_dir
-    Path(out_dir).mkdir(parents=True, exist_ok=True)
-    f_out_jsonl = '%s/%s-%d' % (out_dir, lang, shard)
-    ndjson.dump(filtered, open(f_out_jsonl, 'w'))
-
-
-def _save_stats(stats, lang, output_dir):
+def _save_stats(stats_of_lang, lang, output_dir):
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    f_out = '%s/stats-%s.json' % (output_dir, lang)
+    f_out = '%s/github-stats.json' % output_dir
+    if os.path.isfile(f_out):
+        with open(f_out) as f:
+            stats = json.load(f)
+    else:
+        stats = dict()
+    stats[lang] = stats_of_lang
     with open(f_out, 'w') as f:
-        json.dump(stats, f)
+        json.dump(stats, f, indent=2)
 
 
-def _save_repo_metadata(repos, lang, input_dir):
-    f_out = '%s/repos-%s.jsonl' % (input_dir, lang)
+def _save_repo_metadata(repos, lang, output_dir):
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    f_out = '%s/%s-repos.jsonl' % (output_dir, lang)
     with open(f_out, 'w') as f:
         ndjson.dump(repos, f)
 
 
-def _save_splits(splits, out_dir, lang):
+def _save_splits(splits, out_dir, lang, shard_size=50000):
     print("Saving split to disk...")
     for split, examples in tqdm(splits.items(), total=len(splits)):
-        out_dir_ = os.path.join(out_dir, 'splits', split)
+        out_dir_ = os.path.join(out_dir, split)
         Path(out_dir_).mkdir(parents=True, exist_ok=True)
-        out_file = os.path.join(
-            out_dir_, '%s-%s.jsonl' % (split, lang)
-        )
-        with open(out_file, 'w') as f:
-            for example in examples:
-                f.write(json.dumps(example))
-                f.write('\n')
+        for i in range(0, len(examples), shard_size):
+            num_digits = max(len(str(len(examples)//shard_size+1)), 4)
+            out_file = os.path.join(
+                out_dir_, 'github-%s-%s-%s.jsonl' % (lang, split, str(i).zfill(num_digits))
+            )
+            shard = examples[i*shard_size:(i+1)*shard_size]
+            with open(out_file, 'w') as f:
+                for example in shard:
+                    f.write(json.dumps(example))
+                    f.write('\n')
 
 
 def make_splits(examples, eval_ratio):
@@ -253,15 +252,15 @@ def filter_coq(example):
 # ---
 
 
-def run(lang, file_pattern, filter_fn, limit, overwrite, dedup_chunk_size, out_dir):
+def run(lang, file_pattern, filter_fn, limit, overwrite, dedup_chunk_size, data_dir, meta_dir, repos_dir):
     print("Getting repos list...")
-    repos = get_repos(lang, limit, out_dir)
+    repos = get_repos(lang, limit, repos_dir)
     print("Downloading %d repos..." % (len(repos)))
     for repo in tqdm(repos, total=len(repos)):
         _get_dir_from_repo(**repo, overwrite=overwrite)
         _delete_files_except_pattern(repo['save_path'], r".*\%s" % file_pattern)
 
-    _save_repo_metadata(repos, lang, out_dir)
+    _save_repo_metadata(repos, lang, meta_dir)
 
     print("Extracting files from repos...")
     examples = []
@@ -280,10 +279,9 @@ def run(lang, file_pattern, filter_fn, limit, overwrite, dedup_chunk_size, out_d
     num_tokens = token_length(examples)
     print("\t%d tokens" % (num_tokens))
 
-    _save(examples, lang, out_dir, shard=0)  # extra copy before splitting; not strictly needed
     _save_splits(
         splits=make_splits(examples, args.eval_ratio),
-        out_dir=out_dir,
+        out_dir=data_dir,
         lang=lang
     )
     _save_stats({
@@ -291,7 +289,7 @@ def run(lang, file_pattern, filter_fn, limit, overwrite, dedup_chunk_size, out_d
         'num_examples': len(examples),
         'num_tokens': num_tokens,
         'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    }, lang, out_dir)
+    }, lang, meta_dir)
 
 
 def coq(args):
@@ -302,8 +300,11 @@ def coq(args):
         limit=args.limit,
         overwrite=args.overwrite,
         dedup_chunk_size=args.dedup_chunk_size,
-        out_dir=args.out_dir
+        data_dir=args.data_dir,
+        meta_dir=args.meta_dir,
+        repos_dir=args.repos_dir,
     )
+
 
 def setup(args):
     random.seed(args.seed)
@@ -321,8 +322,11 @@ if __name__ == '__main__':
     parser.add_argument('--limit', type=int, default=250)
     parser.add_argument('--langs', type=str, default=['coq'], nargs='+')
     parser.add_argument('--dedup-chunk-size', type=int, default=2048)
+    parser.add_argument('--shard-size', type=int, default=50000)
     parser.add_argument('--overwrite', action='store_true')
-    parser.add_argument('--out-dir', type=str, default='github-code')
+    parser.add_argument('--data-dir', type=str, default='data_jsonl')
+    parser.add_argument('--meta-dir', type=str, default='meta_json')
+    parser.add_argument('--repos-dir', type=str, default='github-repos')
     parser.add_argument('--eval-ratio', type=int, default=0.05)
     parser.add_argument('--seed', type=int, default=72)
 
