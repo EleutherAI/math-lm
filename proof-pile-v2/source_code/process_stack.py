@@ -560,7 +560,7 @@ def main(args):
                 f.write(json.dumps(save_dict_of_example(x)) + "\n")
 
         print("saving stats to disk...")
-        stats_path = os.path.join(META_DIR, "stats.json")
+        stats_path = os.path.join(META_DIR, "stack-stats.json")
         if os.path.isfile(stats_path):
             with open(stats_path) as f:
                 stats = json.load(f)
