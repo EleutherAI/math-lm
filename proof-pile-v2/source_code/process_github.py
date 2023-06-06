@@ -331,7 +331,7 @@ if __name__ == '__main__':
     parser.add_argument('--data-dir', type=str, default='data_jsonl')
     parser.add_argument('--meta-dir', type=str, default='meta_json')
     parser.add_argument('--repos-dir', type=str, default='github-repos')
-    parser.add_argument('--eval-ratio', type=int, default=0.05)
+    parser.add_argument('--eval-ratio', type=int, default=0.005)
     parser.add_argument('--seed', type=int, default=72)
 
     args = parser.parse_args()
