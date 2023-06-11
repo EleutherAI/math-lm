@@ -4,7 +4,7 @@ import hashlib
 from pathlib import Path
 from github import Github
 from tqdm import tqdm
-from datetime import datetime
+from datetime import datetime, timezone
 import ndjson
 import tiktoken
 import json
@@ -46,17 +46,20 @@ def _delete_files_except_pattern(path, pattern):
             _delete_files_except_pattern(f_path, pattern)
 
 
-def _get_sha(repo):
+def _get_sha(repo, cutoff_date):
     # use the most recent commit
     try:
-        commit_obj = repo.get_commits()[0]
+        if cutoff_date is not None:
+            commit_obj = repo.get_commits(until=cutoff_date)[0]
+        else:
+            commit_obj = repo.get_commits()[0]
         sha = commit_obj.sha
     except IndexError:
         sha = 'master'
     return sha
 
 
-def get_repos(lang, limit, out_dir):
+def get_repos(lang, limit, cutoff_date, out_dir):
     g = Github(GITHUB_ACCESS_TOKEN)
 
     results = g.search_repositories(
@@ -69,7 +72,7 @@ def get_repos(lang, limit, out_dir):
         info = {
             'author': author,
             'repo': repo_name,
-            'sha': _get_sha(repo),
+            'sha': _get_sha(repo, cutoff_date),
             'save_path': '%s/%s/%s-%s' % (out_dir, lang, author, repo_name)
         }
         repositories.append(info)
@@ -257,9 +260,9 @@ def filter_coq(example):
 # ---
 
 
-def run(lang, file_pattern, filter_fn, limit, overwrite, dedup_chunk_size, data_dir, meta_dir, repos_dir):
+def run(lang, file_pattern, filter_fn, limit, cutoff_date, overwrite, dedup_chunk_size, data_dir, meta_dir, repos_dir):
     print("Getting repos list...")
-    repos = get_repos(lang, limit, repos_dir)
+    repos = get_repos(lang, limit, cutoff_date, repos_dir)
     print("Downloading %d repos..." % (len(repos)))
     for repo in tqdm(repos, total=len(repos)):
         _get_dir_from_repo(**repo, overwrite=overwrite)
@@ -302,6 +305,7 @@ def coq(args):
         file_pattern='.v',
         filter_fn=filter_coq,
         limit=args.limit,
+        cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
         dedup_chunk_size=args.dedup_chunk_size,
         data_dir=args.data_dir,
@@ -311,6 +315,12 @@ def coq(args):
 
 
 def setup(args):
+    if args.cutoff_date is not None:
+        cutoff_date = datetime.fromisoformat(args.cutoff_date)
+        # Hard set timezone to UTC to avoid ambiguity.
+        cutoff_date = cutoff_date.replace(tzinfo=timezone.utc)
+        args.cutoff_date = cutoff_date
+
     random.seed(args.seed)
     np.random.seed(args.seed)
 
@@ -332,6 +342,10 @@ if __name__ == '__main__':
     parser.add_argument('--meta-dir', type=str, default='meta_json')
     parser.add_argument('--repos-dir', type=str, default='github-repos')
     parser.add_argument('--eval-ratio', type=int, default=0.005)
+    parser.add_argument(
+        '--cutoff-date', type=str, required=False,
+        help='An ISO date string, such as 2011-11-04. Will retrieve the repos at a '
+             'commit prior to this date to ensure dataset reproducibility.')
     parser.add_argument('--seed', type=int, default=72)
 
     args = parser.parse_args()
