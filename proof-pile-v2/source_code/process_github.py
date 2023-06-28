@@ -1,10 +1,12 @@
 import os
 import re
 import hashlib
+import glob
 from pathlib import Path
 from github import Github
 from tqdm import tqdm
 from datetime import datetime, timezone
+from copy import deepcopy
 import ndjson
 import tiktoken
 import json
@@ -14,6 +16,7 @@ import backoff
 import subprocess
 
 
+CACHE = dict()
 GITHUB_ACCESS_TOKEN = os.environ['GITHUB_ACCESS_TOKEN']
 
 TEXT_MAX_SIZE = 1048575  # in bytes
@@ -59,6 +62,17 @@ def _get_sha(repo, cutoff_date):
     return sha
 
 
+def _get_isabelle_test_names(isabelle_dir='./isabelle'):
+    isabelle_universal_test_theorems_dir = os.path.join(isabelle_dir, 'universal_test_theorems')
+    if Path(isabelle_universal_test_theorems_dir).exists():
+        return
+    tarball_url = "https://github.com/albertqjiang/Portal-to-ISAbelle/raw/main/universal_test_theorems.tar.gz"
+    Path(isabelle_dir).mkdir(parents=True, exist_ok=True)
+    archive_path = os.path.join(isabelle_dir, "archive.tar.gz")
+    subprocess.call(['wget', '-O', archive_path, tarball_url])
+    subprocess.call(['tar', '-xzf', archive_path, '-C', isabelle_dir])
+
+
 def get_repos(lang, limit, cutoff_date, out_dir):
     g = Github(GITHUB_ACCESS_TOKEN)
 
@@ -86,12 +100,14 @@ def _extract(path, pattern, metadata):
     out = []
     base = Path(path)
     for pp in base.rglob(pattern):
+        metadata = deepcopy(metadata)
         if pp.is_file():
             with pp.open() as f:
                 try:
                     text = f.read()
                 except UnicodeDecodeError:
                     continue
+                metadata['path'] = str(pp)
                 out.append({
                     'text': text,
                     'meta': metadata
@@ -99,17 +115,36 @@ def _extract(path, pattern, metadata):
     return out
 
 
-def _filter(examples, filter_fn):
+def _remove_file(example):
+    if os.path.exists(example['meta']['path']):
+        os.remove(example['meta']['path'])
+
+
+def _filter(examples, filter_fn, remove_files=False):
     filtered = []
     for x in tqdm(examples, total=len(examples)):
         if filter_fn(x):
             filtered.append(x)
+        else:
+            if remove_files:
+                _remove_file(x)
     return filtered
+
+
+def _transform(examples, transform_fn):
+    transformed = []
+    n_transformed = 0
+    for x in tqdm(examples, total=len(examples)):
+        x_, was_transformed = transform_fn(x)
+        transformed.append(x_)
+        if was_transformed:
+            n_transformed += 1
+    return transformed, n_transformed
 
 
 def _save_stats(stats_of_lang, lang, output_dir):
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    f_out = '%s/github-stats.json' % output_dir
+    f_out = '%s/github-stats.json' % (output_dir)
     if os.path.isfile(f_out):
         with open(f_out) as f:
             stats = json.load(f)
@@ -129,7 +164,7 @@ def _save_repo_metadata(repos, lang, output_dir):
     f_out = '%s/github_%s_index' % (output_dir, lang)
     with open(f_out, 'w') as f:
         for repo in repos:
-            f.write('%s/%s' % (repo['author'], repo['repo']))
+            f.write('%s/%s\n' % (repo['author'], repo['repo']))
 
 
 def _save_splits(splits, out_dir, lang, shard_size=50000):
@@ -225,6 +260,10 @@ def standard_filter(
         return True
 
 
+def standard_transform(example):
+    return example, False
+
+
 # --- Coq-specific
 def filter_coq(example):
     def _has_coq_keyword(example):
@@ -260,15 +299,80 @@ def filter_coq(example):
 # ---
 
 
-def run(lang, file_pattern, filter_fn, limit, cutoff_date, overwrite, dedup_chunk_size, data_dir, meta_dir, repos_dir):
+# --- Isabelle-specific
+def filter_isabelle(example):
+    def _has_banned_repo(example):
+        BANNED_REPOS = {
+            f"mirror-afp-2.*"  # keep mirror-afp-devel, exclude other copies (e.g. mirror-afp-2021)
+        }
+        for repo in BANNED_REPOS:
+            if re.match(repo, example['meta']['repo']):
+                return True
+        return False
+
+    def _has_theorem_proving_keyword(example):
+        # Rough heuristic of whether this file is related to theorem proving.
+        kws = {'theorem ', 'lemma '}
+        for k in kws:
+            if k in example['text']:
+                return True
+        return False
+
+    keep = standard_filter(example)
+    keep = keep and _has_theorem_proving_keyword(example)
+    keep = keep and (not _has_banned_repo(example))
+    return keep
+
+
+def _load_pisa_names(isabelle_universal_test_theorems_dir):
+    if 'pisa_names' in CACHE:
+        return CACHE['pisa_names']
+    pisa_names = set()
+    for f in glob.glob(os.path.join(isabelle_universal_test_theorems_dir, '*.json')):
+        name = json.load(open(f))[0][1].split(':')[0] + ':'
+        pisa_names.add(name)
+    CACHE['pisa_names'] = pisa_names
+    return pisa_names
+
+
+def _remove_thm(name, example):
+    removed = False
+    thy = example['text']
+    if name in thy:
+        start = thy.find(name)
+        # Remove from the theorem statement to the next \n\n.
+        if '\n\n' in thy[start:]:
+            end = thy[start:].find('\n\n')
+        # If \n\n isn't there, just remove the rest of the document.
+        else:
+            end = len(thy[start:])
+        filtered_thy = thy[:start] + thy[start+end:]
+        example['text'] = filtered_thy
+        removed = True
+
+    return example, removed
+
+
+def transform_isabelle(example):
+    # Remove theorem statements and proofs that have a theorem name in the PISA test set
+    names = _load_pisa_names('./isabelle/universal_test_theorems') 
+    was_transformed = False
+    for name in names:
+        example, removed = _remove_thm(name, example)
+        if removed:
+            was_transformed = True
+    return example, was_transformed
+    
+# --
+
+
+def run(lang, file_pattern, filter_fn, transform_fn, limit, cutoff_date, overwrite, dedup_chunk_size, data_dir, meta_dir, repos_dir):
     print("Getting repos list...")
     repos = get_repos(lang, limit, cutoff_date, repos_dir)
     print("Downloading %d repos..." % (len(repos)))
     for repo in tqdm(repos, total=len(repos)):
         _get_dir_from_repo(**repo, overwrite=overwrite)
         _delete_files_except_pattern(repo['save_path'], r".*\%s" % file_pattern)
-
-    _save_repo_metadata(repos, lang, meta_dir)
 
     print("Extracting files from repos...")
     examples = []
@@ -278,8 +382,12 @@ def run(lang, file_pattern, filter_fn, limit, cutoff_date, overwrite, dedup_chun
     print("\t%d files" % len(examples))
 
     print("Filtering...")
-    examples = _filter(examples, filter_fn)
+    examples = _filter(examples, filter_fn, remove_files=True)
     print("\t%d files" % len(examples))
+    print("Transforming...")
+    examples, n_transformed = _transform(examples, transform_fn)
+    print("\t%d files transformed" % n_transformed)
+
     examples = deduplicate(examples, chunk_size=dedup_chunk_size)
     print("\t%d files" % len(examples))
 
@@ -287,13 +395,16 @@ def run(lang, file_pattern, filter_fn, limit, cutoff_date, overwrite, dedup_chun
     num_tokens = token_length(examples)
     print("\t%d tokens" % (num_tokens))
 
+    print("Saving repo metadata...")
+    _save_repo_metadata(repos, lang, meta_dir)
+
     _save_splits(
         splits=make_splits(examples, args.eval_ratio),
         out_dir=data_dir,
         lang=lang
     )
     _save_stats({
-        'num_repos': args.limit,
+        'num_repos': len(repos),
         'num_examples': len(examples),
         'num_tokens': num_tokens,
     }, lang, meta_dir)
@@ -304,6 +415,7 @@ def coq(args):
         lang='coq',
         file_pattern='.v',
         filter_fn=filter_coq,
+        transform_fn=standard_transform,
         limit=args.limit,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
@@ -312,6 +424,29 @@ def coq(args):
         meta_dir=args.meta_dir,
         repos_dir=args.repos_dir,
     )
+
+
+def isabelle(args):
+    run(
+        lang='isabelle',
+        file_pattern='.thy',
+        filter_fn=filter_isabelle,
+        transform_fn=transform_isabelle,
+        limit=args.limit,
+        cutoff_date=args.cutoff_date,
+        overwrite=args.overwrite,
+        dedup_chunk_size=args.dedup_chunk_size,
+        data_dir=args.data_dir,
+        meta_dir=args.meta_dir,
+        repos_dir=args.repos_dir,
+    )
+
+
+def main(args):
+    if 'coq' in args.langs:
+        coq(args)
+    if 'isabelle' in args.langs:
+        isabelle(args)
 
 
 def setup(args):
@@ -324,17 +459,16 @@ def setup(args):
     random.seed(args.seed)
     np.random.seed(args.seed)
 
-
-def main(args):
-    if 'coq' in args.langs:
-        coq(args)
+    # Pre-download the PISA test set names.
+    if 'isabelle' in args.langs:
+        _get_isabelle_test_names()
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--limit', type=int, default=250)
-    parser.add_argument('--langs', type=str, default=['coq'], nargs='+')
+    parser.add_argument('--limit', type=int, default=1000)
+    parser.add_argument('--langs', type=str, default=['coq', 'isabelle'], nargs='+')
     parser.add_argument('--dedup-chunk-size', type=int, default=2048)
     parser.add_argument('--shard-size', type=int, default=50000)
     parser.add_argument('--overwrite', action='store_true')
