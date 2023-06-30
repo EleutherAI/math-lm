@@ -62,15 +62,16 @@ def _get_sha(repo, cutoff_date):
     return sha
 
 
-def _get_isabelle_test_names(isabelle_dir='./isabelle'):
-    isabelle_universal_test_theorems_dir = os.path.join(isabelle_dir, 'universal_test_theorems')
-    if Path(isabelle_universal_test_theorems_dir).exists():
+def _download_and_unpack(tarball_url, base_dir, unpacked_dir, overwrite):
+    if (not overwrite) and Path(os.path.join(base_dir, unpacked_dir)).exists():
         return
-    tarball_url = "https://github.com/albertqjiang/Portal-to-ISAbelle/raw/main/universal_test_theorems.tar.gz"
-    Path(isabelle_dir).mkdir(parents=True, exist_ok=True)
-    archive_path = os.path.join(isabelle_dir, "archive.tar.gz")
+    Path(base_dir).mkdir(parents=True, exist_ok=True)
+    archive_path = os.path.join(base_dir, "archive.tar.gz")
     subprocess.call(['wget', '-O', archive_path, tarball_url])
-    subprocess.call(['tar', '-xzf', archive_path, '-C', isabelle_dir])
+    subprocess.call(['tar', '-xzf', archive_path, '-C', base_dir])
+    assert Path(os.path.join(base_dir, unpacked_dir)).exists()
+
+
 
 
 def get_repos(lang, limit, cutoff_date, out_dir):
@@ -243,6 +244,22 @@ def numerical_density(ex):
     return ntoks / max(1, len(txt))
 
 
+
+def _remove_until(text, query, until='\n\n'):
+    removed = False
+    if query in text:
+        start = text.find(query)
+        # Remove up to and including the next `until`
+        if until in text[start:]:
+            end = text[start:].find(until)
+        # If `until` isn't there, just remove the rest of the document.
+        else:
+            end = len(text[start:])
+        text = text[:start] + text[start+end:]
+        removed = True
+    return text, removed
+
+
 def standard_filter(
         example,
         max_numerical_density=MAX_NUMERICAL_DENSITY,
@@ -299,6 +316,98 @@ def filter_coq(example):
 # ---
 
 
+# --- Lean-specific
+def filter_lean(example):
+    def _has_banned_repo(example):
+        BANNED_REPOS = {
+            'ProofNet', 
+            'miniF2F'
+        }
+        for repo in BANNED_REPOS:
+            if repo == example['meta']['repo']:
+                return True
+        return False
+
+    def _has_theorem_proving_keyword(example):
+        # Rough heuristic of whether this file is related to theorem proving.
+        kws = {'theorem ', 'lemma ', 'example '}
+        for k in kws:
+            if k in example['text']:
+                return True
+        return False
+
+    def _is_dependency_file(example):
+        if '_target/deps/' in example['meta']['path']:
+            return True
+        return False
+
+    keep = standard_filter(example)
+    keep = keep and _has_theorem_proving_keyword(example)
+    keep = keep and (not _has_banned_repo(example))
+    keep = keep and (not _is_dependency_file(example))
+    return keep
+
+
+def transform_lean(example):
+    # Remove theorem statements and proofs that have a theorem name in the leandojo val/test set
+    file2name = _load_lean_names() 
+    was_transformed = False
+    for file, name in file2name.items():
+        chunks = name.split('.')
+
+        # Try versions of the qualified name, e.g. CategoryTheory.Iso.symm_inv
+        for prefix in ['theorem ', 'lemma ']:
+            for i in range(1, len(chunks)):
+                name_ = prefix + '.'.join(chunks[-i:]) + ' '
+                example, removed = _remove_lean_thm(file, name_, example)
+                if removed:
+                    was_transformed = True
+                    break
+    return example, was_transformed
+
+
+def _load_lean_names():
+    if 'lean_names' in CACHE:
+        return CACHE['lean_names']
+
+    lean_names = {}
+    for split in ['val', 'test']:
+        for ds in ['./__test_sets/lean/leandojo_benchmark/random', 
+                   './__test_sets/lean/leandojo_benchmark_4/random']:
+            with open(os.path.join(ds, '%s.json' % split)) as f:
+                data = json.load(f)
+                for item in data:
+                    lean_names[item['file_path']] = item['full_name']
+
+    CACHE['lean_names'] = lean_names
+    return lean_names 
+
+
+def _remove_lean_thm(file, name, example):
+    removed = False
+    text = example['text']
+    if file in example['meta']['path']:
+        text, removed = _remove_until(text, name, '\n\n')
+    example['text'] = text
+    return example, removed
+
+
+def _get_lean_test_names(overwrite):
+    _download_and_unpack(
+        tarball_url='https://zenodo.org/record/8016386/files/leandojo_benchmark_v1.tar.gz',
+        base_dir='./__test_sets/lean',
+        unpacked_dir='leandojo_benchmark',
+        overwrite=overwrite
+    )
+    _download_and_unpack(
+        tarball_url='https://zenodo.org/record/8040110/files/leandojo_benchmark_4_v1.tar.gz',
+        base_dir='./__test_sets/lean',
+        unpacked_dir='leandojo_benchmark_4',
+        overwrite=overwrite
+    )
+# --
+
+
 # --- Isabelle-specific
 def filter_isabelle(example):
     def _has_banned_repo(example):
@@ -324,6 +433,25 @@ def filter_isabelle(example):
     return keep
 
 
+def transform_isabelle(example):
+    # Remove theorem statements and proofs that have a theorem name in the PISA test set
+    names = _load_pisa_names('./__test_sets/isabelle/universal_test_theorems') 
+    was_transformed = False
+    for name in names:
+        example, removed = _remove_isabelle_thm(name, example)
+        if removed:
+            was_transformed = True
+    return example, was_transformed
+
+
+def _remove_isabelle_thm(name, example):
+    removed = False
+    text = example['text']
+    text, removed = _remove_until(text, name, '\n\n')
+    example['text'] = text
+    return example, removed
+
+
 def _load_pisa_names(isabelle_universal_test_theorems_dir):
     if 'pisa_names' in CACHE:
         return CACHE['pisa_names']
@@ -335,34 +463,13 @@ def _load_pisa_names(isabelle_universal_test_theorems_dir):
     return pisa_names
 
 
-def _remove_thm(name, example):
-    removed = False
-    thy = example['text']
-    if name in thy:
-        start = thy.find(name)
-        # Remove from the theorem statement to the next \n\n.
-        if '\n\n' in thy[start:]:
-            end = thy[start:].find('\n\n')
-        # If \n\n isn't there, just remove the rest of the document.
-        else:
-            end = len(thy[start:])
-        filtered_thy = thy[:start] + thy[start+end:]
-        example['text'] = filtered_thy
-        removed = True
-
-    return example, removed
-
-
-def transform_isabelle(example):
-    # Remove theorem statements and proofs that have a theorem name in the PISA test set
-    names = _load_pisa_names('./isabelle/universal_test_theorems') 
-    was_transformed = False
-    for name in names:
-        example, removed = _remove_thm(name, example)
-        if removed:
-            was_transformed = True
-    return example, was_transformed
-    
+def _get_isabelle_test_names(overwrite):
+    _download_and_unpack(
+        tarball_url="https://github.com/albertqjiang/Portal-to-ISAbelle/raw/main/universal_test_theorems.tar.gz",
+        base_dir='./__test_sets/isabelle',
+        unpacked_dir='universal_test_theorems',
+        overwrite=overwrite
+    )
 # --
 
 
@@ -442,11 +549,29 @@ def isabelle(args):
     )
 
 
+def lean(args):
+    run(
+        lang='lean',
+        file_pattern='.lean',
+        filter_fn=filter_lean,
+        transform_fn=transform_lean,
+        limit=args.limit,
+        cutoff_date=args.cutoff_date,
+        overwrite=args.overwrite,
+        dedup_chunk_size=args.dedup_chunk_size,
+        data_dir=args.data_dir,
+        meta_dir=args.meta_dir,
+        repos_dir=args.repos_dir,
+    )
+
+
 def main(args):
     if 'coq' in args.langs:
         coq(args)
     if 'isabelle' in args.langs:
         isabelle(args)
+    if 'lean' in args.langs:
+        lean(args)
 
 
 def setup(args):
@@ -459,16 +584,18 @@ def setup(args):
     random.seed(args.seed)
     np.random.seed(args.seed)
 
-    # Pre-download the PISA test set names.
+    # Pre-download the relevant test set info.
     if 'isabelle' in args.langs:
-        _get_isabelle_test_names()
+        _get_isabelle_test_names(overwrite=args.overwrite)
+    if 'lean' in args.langs:
+        _get_lean_test_names(overwrite=args.overwrite)
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--limit', type=int, default=1000)
-    parser.add_argument('--langs', type=str, default=['coq', 'isabelle'], nargs='+')
+    parser.add_argument('--langs', type=str, default=['coq', 'isabelle', 'lean'], nargs='+')
     parser.add_argument('--dedup-chunk-size', type=int, default=2048)
     parser.add_argument('--shard-size', type=int, default=50000)
     parser.add_argument('--overwrite', action='store_true')
