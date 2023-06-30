@@ -402,7 +402,7 @@ def filter_processed_jupyter_notebook(example):
 def token_length(examples):
     tokenizer = tiktoken.get_encoding("cl100k_base")
     return {
-        "tokens": [
+        "num_tokens": [
             len(x)
             for x in tokenizer.encode_batch(examples["content"], disallowed_special=())
         ]

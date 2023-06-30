@@ -173,10 +173,10 @@ def _save_splits(splits, out_dir, lang, shard_size=50000):
     for split, examples in tqdm(splits.items(), total=len(splits)):
         out_dir_ = os.path.join(out_dir, split)
         Path(out_dir_).mkdir(parents=True, exist_ok=True)
-        for i in range(0, len(examples), shard_size):
+        for shard, i in enumerate(range(0, len(examples), shard_size)):
             num_digits = max(len(str(len(examples)//shard_size+1)), 4)
             out_file = os.path.join(
-                out_dir_, 'github-%s-%s-%s.jsonl' % (lang, split, str(i).zfill(num_digits))
+                out_dir_, 'github-%s-%s-%s.jsonl' % (lang, split, str(shard).zfill(num_digits))
             )
             shard = examples[i*shard_size:(i+1)*shard_size]
             with open(out_file, 'w') as f:
@@ -432,6 +432,23 @@ def filter_isabelle(example):
     keep = keep and (not _has_banned_repo(example))
     return keep
 
+def filter_matlab(example):
+    def _has_objectivec_keyword(example):
+        kws = {'#import', '@interface', '@implementation', '@property'}
+
+        return any(k in example['text'] for k in kws)
+
+    def _has_c_keyword(example):
+        kws = {'#include', r' main\(.*{$'}
+
+        return any(re.search(k, example['text']) for k in kws)
+
+    keep = all([
+        standard_filter(example), 
+        not _has_objectivec_keyword(example),
+        not _has_c_keyword(example)
+    ])
+    return keep
 
 def transform_isabelle(example):
     # Remove theorem statements and proofs that have a theorem name in the PISA test set
@@ -548,6 +565,20 @@ def isabelle(args):
         repos_dir=args.repos_dir,
     )
 
+def matlab(args):
+    run(
+        lang='MATLAB',
+        file_pattern='.m',
+        filter_fn=filter_matlab,
+        transform_fn=standard_transform,
+        limit=args.limit,
+        cutoff_date=args.cutoff_date,
+        overwrite=args.overwrite,
+        dedup_chunk_size=args.dedup_chunk_size,
+        data_dir=args.data_dir,
+        meta_dir=args.meta_dir,
+        repos_dir=args.repos_dir,
+    )
 
 def lean(args):
     run(
@@ -570,9 +601,10 @@ def main(args):
         coq(args)
     if 'isabelle' in args.langs:
         isabelle(args)
+    if 'matlab' in args.langs:
+        matlab(args)
     if 'lean' in args.langs:
         lean(args)
-
 
 def setup(args):
     if args.cutoff_date is not None:
