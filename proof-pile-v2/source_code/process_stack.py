@@ -189,9 +189,14 @@ def c_filter(example):
     text = example["content"]
     keywords = [
         "#include <fftw.h>",
+        "#include <fftw3.h>"
         "#include <rfftw.h>",
         "#include <gsl",
         "#include <cblas.h>",
+        "#include <blas.h>",
+        "#include <lapacke.h>",
+        "#include <nlopt.h>",
+        "#include <petsc.h>"
     ]
 
     found = [x for x in keywords if x in text]
@@ -505,12 +510,12 @@ def main(args):
         # counts number of files and dataset byte size and tokens in single loop
         print("calculating dataset statistics...")
         files, size, tokens = reduce(
-            lambda x, y: (x[0] + 1, x[1] + y["size"], x[2] + y["tokens"]),
+            lambda x, y: (x[0] + 1, x[1] + y["size"], x[2] + y["num_tokens"]),
             tqdm(ds),
             (0, 0, 0),
         )
 
-        stats_of_lang = {"files": files, "size": size, "tokens": tokens}
+        stats_of_lang = {"files": files, "size": size, "num_tokens": tokens}
 
         print("printing stats...")
         print(stats_of_lang)
