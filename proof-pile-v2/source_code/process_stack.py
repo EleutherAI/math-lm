@@ -76,6 +76,7 @@ DATA_DIRS = [
     "julia",
     "c",
     "cpp",
+    "fortran",
     # markup languages
     "tex",
 ]
@@ -144,6 +145,9 @@ def lean_filter(example):
     return standard_filter(example)
 
 def isabelle_filter(example): 
+    return standard_filter(example)
+
+def fortran_filter(example):
     return standard_filter(example)
 
 def idris_filter(example): 
@@ -472,6 +476,8 @@ def main(args):
             ds = ds.filter(tex_filter, **filter_kwargs)
         elif lang == "julia":
             ds = ds.filter(julia_filter, **filter_kwargs)
+        elif lang == "fortran": 
+            ds = ds.filter(fortran_filter, **filter_kwargs)
         elif lang == "jupyter-notebook":
             ds = ds.filter(jupyter_notebook_filter, **filter_kwargs)
             ds = ds.map(process_jupyter_notebook, **filter_kwargs)
