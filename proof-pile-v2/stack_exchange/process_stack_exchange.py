@@ -249,39 +249,43 @@ def get_and_format(url, save_dir):
 
 
 if __name__ == "__main__":
+    save_dir = "data_jsonl/"
+    if os.path.isdir(save_dir):
+        raise OSError(f"{save_dir} already exists")
+
     get_and_format(
         "https://archive.org/download/stackexchange/mathoverflow.net.7z",
-        save_dir="data_jsonl/",
+        save_dir=save_dir,
     )
     get_and_format(
         "https://archive.org/download/stackexchange/math.stackexchange.com.7z",
-        "data_jsonl/",
+        save_dir,
     )
     get_and_format(
         "https://archive.org/download/stackexchange/physics.stackexchange.com.7z", 
-        "data_jsonl/", 
+        save_dir, 
     )
     get_and_format(
         "https://archive.org/download/stackexchange/cstheory.stackexchange.com.7z", 
-        "data_jsonl/", 
+        save_dir, 
     )
     get_and_format(
         "https://archive.org/download/stackexchange/datascience.stackexchange.com.7z", 
-        "data_jsonl/", 
+        save_dir, 
     )
     get_and_format(
         "https://archive.org/download/stackexchange/proofassistants.stackexchange.com.7z", 
-        "data_jsonl/",
+        save_dir,
     )
     get_and_format(
         "https://archive.org/download/stackexchange/scicomp.stackexchange.com.7z", 
-        "data_jsonl/",
+        save_dir,
     )
     get_and_format(
         "https://archive.org/download/stackexchange/cs.stackexchange.com.7z", 
-        "data_jsonl/",
+        save_dir,
     )
     get_and_format(
         "https://archive.org/download/stackexchange/or.stackexchange.com.7z", 
-        "data_jsonl/",
+        save_dir,
     )
