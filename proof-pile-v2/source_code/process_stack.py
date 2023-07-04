@@ -70,6 +70,8 @@ DATA_DIRS = [
     "isabelle",
     "idris", 
     "agda",
+    # functional programming
+    "haskell"
     # imperative languages
     "python",
     "jupyter-notebook",
@@ -155,6 +157,24 @@ def idris_filter(example):
 
 def agda_filter(example): 
     return standard_filter(example)
+
+def haskell_filter(example):
+    packages = [
+            "Numeric.LinearAlgebra", 
+            "Numeric.SpecFunctions", 
+            "Numeric.Vector",
+            "Statistics", 
+            "Data.Complex"
+    ]
+    
+    rexps = []
+    for p in packages:
+        rexps.append(r'import\s+' + p)
+        rexps.append(r'import\s+qualified\s+' + p)
+
+    has_package = any(re.search(rexp, example["content"]) for rexp in rexps)
+
+    return has_package and standard_filter(example)
 
 def py_filter(example):
     text = example["content"]
@@ -471,6 +491,8 @@ def main(args):
             ds = ds.filter(agda_filter, **filter_kwargs)
         elif lang == "isabelle": 
             ds = ds.filter(isabelle_filter, **filter_kwargs)
+        elif lang == "haskell": 
+            ds = ds.filter(haskell_filter, **filter_kwargs)
         elif lang == "python":
             ds = ds.filter(py_filter, **filter_kwargs)
         elif lang == "c":
