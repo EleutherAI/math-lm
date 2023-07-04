@@ -273,3 +273,15 @@ if __name__ == "__main__":
         "https://archive.org/download/stackexchange/proofassistants.stackexchange.com.7z", 
         "data_jsonl/",
     )
+    get_and_format(
+        "https://archive.org/download/stackexchange/scicomp.stackexchange.com.7z", 
+        "data_jsonl/",
+    )
+    get_and_format(
+        "https://archive.org/download/stackexchange/cs.stackexchange.com.7z", 
+        "data_jsonl/",
+    )
+    get_and_format(
+        "https://archive.org/download/stackexchange/or.stackexchange.com.7z", 
+        "data_jsonl/",
+    )
