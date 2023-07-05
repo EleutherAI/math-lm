@@ -208,13 +208,18 @@ def concurrent_get_filter_save(
         raw_dir: str, 
         data_dir: str, 
         meta_dir: str,
+        num_workers: int,
 ):
     to_map = partial(get_filter_save, raw_dir=raw_dir, data_dir=data_dir)
 
     locks = {k: Lock() for k in EXTENSIONS}
 
-    with CustomProcessPoolExecutor(initializer=init_pool_processes, initargs=(locks,)) as executor: 
-        token_count_dicts = executor.map(to_map, urls)
+    with CustomProcessPoolExecutor(
+            max_workers=num_workers, 
+            initializer=init_pool_processes, 
+            initargs=(locks,)
+    ) as executor: 
+        token_count_dicts = list(executor.map(to_map, urls))
 
     #init_pool_processes(locks)
     
@@ -247,7 +252,8 @@ def main(args):
             urls=urls,
             raw_dir=args.raw_dir,
             data_dir=args.data_dir,
-            meta_dir=args.meta_dir
+            meta_dir=args.meta_dir,
+            num_workers=args.num_workers,
     )
 
 
@@ -257,7 +263,7 @@ if __name__=="__main__":
     parser.add_argument('--data-dir', type=str, default='data_jsonl/')
     parser.add_argument('--meta-dir', type=str, default='meta_json/')
     parser.add_argument('--raw-dir', type=str, default='raw_rj/')
-    parser.add_argument('--seed', type=int, default=72)
+    parser.add_argument('--num-workers', type=int, default=16)
 
     args = parser.parse_args()
 
@@ -265,6 +271,7 @@ if __name__=="__main__":
     # hack to get setup to work
     args.langs = []
     args.cutoff_date = None
+    args.seed=2
  
     setup(args)
     main(args) 
