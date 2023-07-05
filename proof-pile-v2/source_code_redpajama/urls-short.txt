@@ -1,0 +1,7 @@
+https://data.together.xyz/redpajama-data-1T/v1.0.0/github/filtered_0f27d10d846a473b96070c3394832f32.sampled.jsonl
+https://data.together.xyz/redpajama-data-1T/v1.0.0/github/filtered_26a6fa61c5eb4bb885e7bc643e285f0e.sampled.jsonl
+https://data.together.xyz/redpajama-data-1T/v1.0.0/github/filtered_275100c1a44f4451b0343373ebc5637a.sampled.jsonl
+https://data.together.xyz/redpajama-data-1T/v1.0.0/github/filtered_27f05c041a1c401783f90b9415e40e4b.sampled.jsonl
+https://data.together.xyz/redpajama-data-1T/v1.0.0/github/filtered_28106e66bfd94978abbc15ec845aeddb.sampled.jsonl
+https://data.together.xyz/redpajama-data-1T/v1.0.0/github/filtered_2afd093fefad4c8da76cc539e8fb6137.sampled.jsonl
+
