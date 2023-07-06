@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 import hashlib
 import glob
@@ -14,6 +15,7 @@ import random
 import numpy as np
 import backoff
 import subprocess
+import requests
 
 
 CACHE = dict()
@@ -72,10 +74,55 @@ def _download_and_unpack(tarball_url, base_dir, unpacked_dir, overwrite):
     assert Path(os.path.join(base_dir, unpacked_dir)).exists()
 
 
+def alt_get_repos(g, lang, limit, cutoff_date, out_dir):
+    url = 'https://api.github.com/search/repositories'
+    headers = {'Authorization': f'token {GITHUB_ACCESS_TOKEN}'}
+    per_page = 100
+    params = {
+        'q': f'language:{lang}',
+        'sort': 'stars',
+        'order': 'desc',
+        'per_page': per_page,
+        'page': 1
+    }
 
+    repositories=[]
+
+    for _ in tqdm(range(0, limit, per_page)):
+        response = requests.get(url, headers=headers, params=params)
+        data = response.json()
+        if 'items' not in data:
+            break
+
+        for repo in data['items']:
+            author, repo_name = repo['full_name'].split('/')
+            repo_obj = g.get_repo(repo['full_name'])
+            info = {
+                'author': author,
+                'repo': repo_name,
+                'sha': _get_sha(repo_obj, cutoff_date),
+                'save_path': '%s/%s/%s-%s' % (out_dir, lang, author, repo_name)
+            }
+            repositories.append(info)
+
+            if len(repositories)>limit:
+                break
+
+        if 'link' in response.headers:
+            if 'rel="next"' not in response.headers['link']:
+                break
+
+        params['page'] += 1
+
+    return repositories
 
 def get_repos(lang, limit, cutoff_date, out_dir):
     g = Github(GITHUB_ACCESS_TOKEN)
+
+    if limit > 1020: 
+        # For some reason, python wrapper doesn't return more than 1020 repos
+        print("first iteration takes ~30s")
+        return alt_get_repos(g, lang, limit, cutoff_date, out_dir)
 
     results = g.search_repositories(
         query='language:%s' % lang,
