@@ -16,6 +16,10 @@ import numpy as np
 import backoff
 import subprocess
 import requests
+import tarfile
+
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 
 
 CACHE = dict()
@@ -23,9 +27,9 @@ GITHUB_ACCESS_TOKEN = os.environ['GITHUB_ACCESS_TOKEN']
 
 TEXT_MAX_SIZE = 1048575  # in bytes
 MAX_NUMERICAL_DENSITY = .5
+MAX_SIZE_BYTES=1e9 # maximum size of repo tarball
 
-
-@backoff.on_exception(backoff.expo, subprocess.CalledProcessError)
+@backoff.on_exception(backoff.expo, requests.exceptions.RequestException)
 def _get_dir_from_repo(author, repo, sha, save_path, overwrite):
     if (not overwrite) and Path(save_path).exists():
         return
@@ -35,8 +39,22 @@ def _get_dir_from_repo(author, repo, sha, save_path, overwrite):
         "https://github.com/" + author + "/" + repo + "/archive/" + sha + ".tar.gz"
     )
 
-    subprocess.call(['wget', '-O', archive_path, tarball_url])
-    subprocess.call(['tar', '-xzf', archive_path, '-C', save_path])
+    response = requests.get(tarball_url, stream=True)
+    cumsize = 0 
+    if response.status_code == 200:
+        with open(archive_path, 'wb') as f:
+            for chunk in response.iter_content(2**18):
+                cumsize += len(chunk)
+                if cumsize > MAX_SIZE_BYTES:
+                    print(f"{author}/{repo} exceeded {MAX_SIZE_BYTES} bytes, skipping")
+                    os.remove(archive_path)
+                    return 
+
+                f.write(chunk)
+
+    with tarfile.open(archive_path, 'r:gz') as tar:
+        tar.extractall(path=save_path)
+    os.remove(archive_path)
 
 
 def _delete_files_except_pattern(path, pattern):
@@ -541,8 +559,17 @@ def run(lang, file_pattern, filter_fn, transform_fn, limit, cutoff_date, overwri
     print("Getting repos list...")
     repos = get_repos(lang, limit, cutoff_date, repos_dir)
     print("Downloading %d repos..." % (len(repos)))
+    with ThreadPoolExecutor() as executor:
+
+        futures = [executor.submit(
+            _get_dir_from_repo, **repo, overwrite=overwrite
+        ) for repo in repos]
+
+        for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
+            pass
+
+
     for repo in tqdm(repos, total=len(repos)):
-        _get_dir_from_repo(**repo, overwrite=overwrite)
         _delete_files_except_pattern(repo['save_path'], r".*\%s" % file_pattern)
 
     print("Extracting files from repos...")
