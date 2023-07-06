@@ -674,7 +674,10 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--limit', type=int, default=1000)
-    parser.add_argument('--langs', type=str, default=['coq', 'isabelle', 'lean'], nargs='+')
+    parser.add_argument(
+            '--langs', type=str, 
+            default=['coq', 'isabelle', 'lean', 'matlab'], nargs='+'
+    )
     parser.add_argument('--dedup-chunk-size', type=int, default=2048)
     parser.add_argument('--shard-size', type=int, default=50000)
     parser.add_argument('--overwrite', action='store_true')
@@ -683,7 +686,7 @@ if __name__ == '__main__':
     parser.add_argument('--repos-dir', type=str, default='github-repos')
     parser.add_argument('--eval-ratio', type=int, default=0.005)
     parser.add_argument(
-        '--cutoff-date', type=str, required=False,
+        '--cutoff-date', type=str, required=False, default='2023-04-01',
         help='An ISO date string, such as 2011-11-04. Will retrieve the repos at a '
              'commit prior to this date to ensure dataset reproducibility.')
     parser.add_argument('--seed', type=int, default=72)
