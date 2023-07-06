@@ -5,8 +5,9 @@ from concurrent import futures
 from urllib.parse import urlparse
 from functools import partial
 from multiprocessing import Lock
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from pathlib import Path
+import backoff
 
 import httpx
 import ndjson
@@ -71,6 +72,12 @@ def init_pool_processes(the_locks):
     global locks
     locks = the_locks
 
+class CustomThreadPoolExecutor(ThreadPoolExecutor):
+    def __init__(self, max_workers=None, initializer=None, initargs=()):
+        super().__init__(
+                max_workers=max_workers, initializer=initializer, initargs=initargs
+        )
+
 class CustomProcessPoolExecutor(ProcessPoolExecutor):
     def __init__(self, max_workers=None, initializer=None, initargs=()):
         super().__init__(
@@ -99,9 +106,10 @@ def _convert_to_gh_format(example):
             }
     }
 
+@backoff.on_exception(backoff.expo, httpx.RemoteProtocolError)
 def download_jsonl(url: str, filepath: str):
     with open(filepath, "wb") as download_file:
-        with httpx.stream("GET", url) as response:
+        with httpx.stream("GET", url, timeout=30) as response:
             total = int(response.headers["Content-Length"])
 
             with tqdm(total=total,unit_scale=True,unit_divisor=1024,unit="B") as progress:
@@ -123,8 +131,19 @@ def get_jsonl(url: str, raw_dir: str) -> List:
     else:
         print(f"found local copy...")
     
-    with open(filepath) as f: 
-        data = ndjson.load(f)
+    try: 
+        print("checking for decode errors...")
+        with open(filepath) as f: 
+            data = ndjson.load(f)
+    except json.decoder.JSONDecodeError:
+        print(f"WARNING: {filepath} failed to decode. Retrying download...")
+        download_jsonl(url=url, filepath=filepath)
+        try: 
+            with open(filepath) as f: 
+                    data = ndjson.load(f)
+        except json.decoder.JSONDecodeError:
+            print(f"WARNING: {filepath} failed to decode again. Giving up.")
+            data = []
 
     print(f"done getting {filename}")
 
@@ -175,13 +194,13 @@ def process(example):
     else: 
         new = example
 
-    return {**new, "num_tokens": len(ENC.encode(new["text"]))}
+    return {**new, "num_tokens": len(ENC.encode(new["text"], disallowed_special=()))}
     
 
 def get_filter_save(url: str, raw_dir: str, data_dir: str):
     data = get_jsonl(url=url, raw_dir=raw_dir)
-    
     print("processing...")
+    
     processed_data = [process(x) for x in tqdm(data) if filter_fn(x)]
     
     token_counts_dict = {}
@@ -213,7 +232,6 @@ def concurrent_get_filter_save(
     to_map = partial(get_filter_save, raw_dir=raw_dir, data_dir=data_dir)
 
     locks = {k: Lock() for k in EXTENSIONS}
-
     with CustomProcessPoolExecutor(
             max_workers=num_workers, 
             initializer=init_pool_processes, 
@@ -223,7 +241,7 @@ def concurrent_get_filter_save(
 
     #init_pool_processes(locks)
     
-    # token_count_dicts = list(map(to_map, urls))
+    #token_count_dicts = list(map(to_map, urls))
 
     print("TOKEN COUNT DICTS...", token_count_dicts)
     token_count_dict = {
@@ -238,8 +256,8 @@ def concurrent_get_filter_save(
         json.dump(token_count_dict, f)
 
 def main(args):
-    if os.path.isdir(args.data_dir): 
-        raise OSError(f"{args.data_dir} already exists")
+    # if os.path.isdir(args.data_dir): 
+    #    raise OSError(f"{args.data_dir} already exists")
     Path(args.data_dir).mkdir(exist_ok=True, parents=True)
     Path(args.raw_dir).mkdir(exist_ok=True, parents=True)
     Path(args.meta_dir).mkdir(exist_ok=True, parents=True)
