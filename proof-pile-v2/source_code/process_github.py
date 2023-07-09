@@ -1,11 +1,14 @@
 import os
+import sys
 import re
 import hashlib
 import glob
 from pathlib import Path
-from github import Github
+from github import Github, GithubException
+import github
 from tqdm import tqdm
-from datetime import datetime, timezone
+import datetime
+from datetime import datetime, timezone, timedelta
 from copy import deepcopy
 import ndjson
 import tiktoken
@@ -14,6 +17,13 @@ import random
 import numpy as np
 import backoff
 import subprocess
+import requests
+import tarfile
+
+from typing import Generator
+
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 
 
 CACHE = dict()
@@ -21,9 +31,31 @@ GITHUB_ACCESS_TOKEN = os.environ['GITHUB_ACCESS_TOKEN']
 
 TEXT_MAX_SIZE = 1048575  # in bytes
 MAX_NUMERICAL_DENSITY = .5
+MAX_SIZE_BYTES=1e9 # maximum size of repo tarball
 
+def week_intervals(
+        start=datetime.fromisoformat('2009-01-01').replace(tzinfo=timezone.utc), 
+        end=datetime.fromisoformat('2023-04-01').replace(tzinfo=timezone.utc),
+) -> Generator[tuple, None, None]:
+    start_date = start
+    end_date = end
 
-@backoff.on_exception(backoff.expo, subprocess.CalledProcessError)
+    if start_date > end_date:
+        raise ValueError('Start date should not be after end date')
+
+    left = start_date
+    right = start_date + timedelta(days=7)
+
+    while left <= end_date:
+        if right > end_date:
+            right = end_date
+
+        yield left.isoformat(), right.isoformat()
+
+        left += timedelta(days=7)
+        right += timedelta(days=7)
+        
+@backoff.on_exception(backoff.expo, requests.exceptions.RequestException)
 def _get_dir_from_repo(author, repo, sha, save_path, overwrite):
     if (not overwrite) and Path(save_path).exists():
         return
@@ -33,8 +65,22 @@ def _get_dir_from_repo(author, repo, sha, save_path, overwrite):
         "https://github.com/" + author + "/" + repo + "/archive/" + sha + ".tar.gz"
     )
 
-    subprocess.call(['wget', '-O', archive_path, tarball_url])
-    subprocess.call(['tar', '-xzf', archive_path, '-C', save_path])
+    response = requests.get(tarball_url, stream=True)
+    cumsize = 0 
+    if response.status_code == 200:
+        with open(archive_path, 'wb') as f:
+            for chunk in response.iter_content(2**18):
+                cumsize += len(chunk)
+                if cumsize > MAX_SIZE_BYTES:
+                    print(f"{author}/{repo} exceeded {MAX_SIZE_BYTES} bytes, skipping")
+                    os.remove(archive_path)
+                    return 
+
+                f.write(chunk)
+
+    with tarfile.open(archive_path, 'r:gz') as tar:
+        tar.extractall(path=save_path)
+    os.remove(archive_path)
 
 
 def _delete_files_except_pattern(path, pattern):
@@ -48,7 +94,7 @@ def _delete_files_except_pattern(path, pattern):
         elif os.path.isdir(f_path):
             _delete_files_except_pattern(f_path, pattern)
 
-
+@backoff.on_exception(backoff.expo, GithubException)
 def _get_sha(repo, cutoff_date):
     # use the most recent commit
     try:
@@ -72,8 +118,6 @@ def _download_and_unpack(tarball_url, base_dir, unpacked_dir, overwrite):
     assert Path(os.path.join(base_dir, unpacked_dir)).exists()
 
 
-
-
 def get_repos(lang, limit, cutoff_date, out_dir):
     g = Github(GITHUB_ACCESS_TOKEN)
 
@@ -94,6 +138,39 @@ def get_repos(lang, limit, cutoff_date, out_dir):
 
         if len(repositories) == limit:
             break
+    return repositories
+
+@backoff.on_exception(backoff.expo, GithubException)
+def search_week(g, lang, left, right):
+    return [x for x in g.search_repositories(
+            query=f"language:{lang} created:{left}..{right}",
+            sort='stars'
+    )]
+ 
+def get_repos_by_week(lang, limit, cutoff_date, out_dir):
+    g = Github(GITHUB_ACCESS_TOKEN)
+
+    repositories = []
+
+    num_weeks = int((cutoff_date - datetime.fromisoformat("2009-01-01").replace(tzinfo=timezone.utc))/timedelta(days=7))
+    
+    for left, right in tqdm(week_intervals(end=cutoff_date), total=num_weeks):
+        results = search_week(g, lang, left, right)
+        for repo in results:
+            author, repo_name = repo.full_name.split('/')
+            info = {
+                'author': author,
+                'repo': repo_name,
+                'sha': _get_sha(repo, cutoff_date),
+                'save_path': '%s/%s/%s-%s' % (out_dir, lang, author, repo_name)
+            }
+            repositories.append(info)
+
+            if len(repositories) == limit:
+                break
+        if len(repositories) ==limit:
+            break
+
     return repositories
 
 
@@ -490,12 +567,24 @@ def _get_isabelle_test_names(overwrite):
 # --
 
 
-def run(lang, file_pattern, filter_fn, transform_fn, limit, cutoff_date, overwrite, dedup_chunk_size, data_dir, meta_dir, repos_dir):
+def run(lang, file_pattern, filter_fn, transform_fn, limit, cutoff_date, overwrite, dedup_chunk_size, data_dir, meta_dir, repos_dir, batch_by_week):
     print("Getting repos list...")
-    repos = get_repos(lang, limit, cutoff_date, repos_dir)
+    if not batch_by_week:
+        repos = get_repos(lang, limit, cutoff_date, repos_dir)
+    else:
+        repos = get_repos_by_week(lang, limit, cutoff_date, repos_dir)
     print("Downloading %d repos..." % (len(repos)))
+    with ThreadPoolExecutor() as executor:
+
+        futures = [executor.submit(
+            _get_dir_from_repo, **repo, overwrite=overwrite
+        ) for repo in repos]
+
+        for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
+            pass
+
+
     for repo in tqdm(repos, total=len(repos)):
-        _get_dir_from_repo(**repo, overwrite=overwrite)
         _delete_files_except_pattern(repo['save_path'], r".*\%s" % file_pattern)
 
     print("Extracting files from repos...")
@@ -547,6 +636,7 @@ def coq(args):
         data_dir=args.data_dir,
         meta_dir=args.meta_dir,
         repos_dir=args.repos_dir,
+        batch_by_week=args.batch_by_week
     )
 
 
@@ -563,6 +653,7 @@ def isabelle(args):
         data_dir=args.data_dir,
         meta_dir=args.meta_dir,
         repos_dir=args.repos_dir,
+        batch_by_week=args.batch_by_week
     )
 
 def matlab(args):
@@ -578,6 +669,7 @@ def matlab(args):
         data_dir=args.data_dir,
         meta_dir=args.meta_dir,
         repos_dir=args.repos_dir,
+        batch_by_week=args.batch_by_week
     )
 
 def lean(args):
@@ -593,6 +685,7 @@ def lean(args):
         data_dir=args.data_dir,
         meta_dir=args.meta_dir,
         repos_dir=args.repos_dir,
+        batch_by_week=args.batch_by_week
     )
 
 
@@ -627,7 +720,20 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--limit', type=int, default=1000)
-    parser.add_argument('--langs', type=str, default=['coq', 'isabelle', 'lean'], nargs='+')
+    parser.add_argument(
+            '--batch-by-week', action='store_true', 
+            help=(
+                "Batch repository search requests by week."
+                "Necessary if args.limit>1020."
+                "Note this causes the repo number cut off to be"
+                "applied based on chronological order"
+                "rather than number of stars."
+            )
+    )
+    parser.add_argument(
+            '--langs', type=str, 
+            default=['coq', 'isabelle', 'lean', 'matlab'], nargs='+'
+    )
     parser.add_argument('--dedup-chunk-size', type=int, default=2048)
     parser.add_argument('--shard-size', type=int, default=50000)
     parser.add_argument('--overwrite', action='store_true')
@@ -636,7 +742,7 @@ if __name__ == '__main__':
     parser.add_argument('--repos-dir', type=str, default='github-repos')
     parser.add_argument('--eval-ratio', type=int, default=0.005)
     parser.add_argument(
-        '--cutoff-date', type=str, required=False,
+        '--cutoff-date', type=str, required=False, default='2023-04-01',
         help='An ISO date string, such as 2011-11-04. Will retrieve the repos at a '
              'commit prior to this date to ensure dataset reproducibility.')
     parser.add_argument('--seed', type=int, default=72)
