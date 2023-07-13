@@ -20,6 +20,7 @@ import backoff
 import subprocess
 import requests
 import tarfile
+import code
 
 from typing import Generator
 
@@ -34,8 +35,10 @@ TEXT_MAX_SIZE = 1048575  # in bytes
 MAX_NUMERICAL_DENSITY = .5
 MAX_SIZE_BYTES=1e9 # maximum size of repo tarball
 
+INIT_DATE="2023-01-01" # iso datestring
+
 def week_intervals(
-        start=datetime.fromisoformat('2009-01-01').replace(tzinfo=timezone.utc), 
+        start=datetime.fromisoformat(INIT_DATE).replace(tzinfo=timezone.utc), 
         end=datetime.fromisoformat('2023-04-01').replace(tzinfo=timezone.utc),
 ) -> Generator[tuple, None, None]:
     start_date = start
@@ -51,7 +54,7 @@ def week_intervals(
         if right > end_date:
             right = end_date
 
-        yield left.isoformat(), right.isoformat()
+        yield left.date().isoformat(), right.date().isoformat()
 
         left += timedelta(days=7)
         right += timedelta(days=7)
@@ -160,16 +163,17 @@ def get_repos_by_week(lang, limit, cutoff_date, out_dir):
 
     repositories = []
 
-    num_weeks = int((cutoff_date - datetime.fromisoformat("2009-01-01").replace(tzinfo=timezone.utc))/timedelta(days=7))
+    num_weeks = int((cutoff_date - datetime.fromisoformat(INIT_DATE).replace(tzinfo=timezone.utc))/timedelta(days=7))
     
     for left, right in tqdm(week_intervals(end=cutoff_date), total=num_weeks):
         results = iter(search_week(g, lang, left, right))
         while True: 
             try: 
+                attempt=1
                 while True:
-                    attempt=1
                     try: 
                         repo = next(results)
+                        break
                     except GithubException:
                         now = datetime.now().strftime("%H:%M")
                         print(f"hit rate limit, sleeping for one hour starting {now}...")
@@ -178,6 +182,7 @@ def get_repos_by_week(lang, limit, cutoff_date, out_dir):
                         time.sleep(RATE_LIMIT_WAIT_TIME) 
             except StopIteration:
                 break
+
 
             author, repo_name = repo.full_name.split('/')
             info = {
@@ -188,9 +193,8 @@ def get_repos_by_week(lang, limit, cutoff_date, out_dir):
             }
             repositories.append(info)
 
-            if len(repositories) == limit:
-                break 
-                
+            if len(repositories) >= limit:
+                return repositories
     return repositories
 
 
