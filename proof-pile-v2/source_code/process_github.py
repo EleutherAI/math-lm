@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import re
 import hashlib
 import glob
@@ -19,6 +20,7 @@ import backoff
 import subprocess
 import requests
 import tarfile
+import code
 
 from typing import Generator
 
@@ -50,7 +52,7 @@ def week_intervals(
         if right > end_date:
             right = end_date
 
-        yield left.isoformat(), right.isoformat()
+        yield left.date().isoformat(), right.date().isoformat()
 
         left += timedelta(days=7)
         right += timedelta(days=7)
@@ -140,23 +142,46 @@ def get_repos(lang, limit, cutoff_date, out_dir):
             break
     return repositories
 
-@backoff.on_exception(backoff.expo, GithubException)
+@backoff.on_exception(
+        backoff.expo, 
+        GithubException, 
+        on_backoff=lambda details: print(
+            f"Backing off search_week function by {details['wait']}"
+        )
+)
 def search_week(g, lang, left, right):
-    return [x for x in g.search_repositories(
+    return g.search_repositories(
             query=f"language:{lang} created:{left}..{right}",
             sort='stars'
-    )]
- 
-def get_repos_by_week(lang, limit, cutoff_date, out_dir):
+    )
+
+RATE_LIMIT_WAIT_TIME=60*60+1 
+def get_repos_by_week(lang, limit, init_date, cutoff_date, out_dir):
     g = Github(GITHUB_ACCESS_TOKEN)
 
     repositories = []
 
-    num_weeks = int((cutoff_date - datetime.fromisoformat("2009-01-01").replace(tzinfo=timezone.utc))/timedelta(days=7))
+    num_weeks = int((cutoff_date - init_date)/timedelta(days=7))
     
-    for left, right in tqdm(week_intervals(end=cutoff_date), total=num_weeks):
-        results = search_week(g, lang, left, right)
-        for repo in results:
+    for left, right in tqdm(week_intervals(start=init_date, end=cutoff_date), total=num_weeks):
+        results = iter(search_week(g, lang, left, right))
+        while True: 
+            try: 
+                attempt=1
+                while True:
+                    try: 
+                        repo = next(results)
+                        break
+                    except GithubException:
+                        now = datetime.now().strftime("%H:%M")
+                        print(f"hit rate limit, sleeping for one hour starting {now}...")
+                        print(f"this was attempt number {attempt} from this location...")
+                        attempt+=1
+                        time.sleep(RATE_LIMIT_WAIT_TIME) 
+            except StopIteration:
+                break
+
+
             author, repo_name = repo.full_name.split('/')
             info = {
                 'author': author,
@@ -166,11 +191,8 @@ def get_repos_by_week(lang, limit, cutoff_date, out_dir):
             }
             repositories.append(info)
 
-            if len(repositories) == limit:
-                break
-        if len(repositories) ==limit:
-            break
-
+            if len(repositories) >= limit:
+                return repositories
     return repositories
 
 
@@ -567,12 +589,16 @@ def _get_isabelle_test_names(overwrite):
 # --
 
 
-def run(lang, file_pattern, filter_fn, transform_fn, limit, cutoff_date, overwrite, dedup_chunk_size, data_dir, meta_dir, repos_dir, batch_by_week):
+def run(lang, file_pattern, filter_fn, transform_fn, limit, init_date, cutoff_date, overwrite, dedup_chunk_size, data_dir, meta_dir, repos_dir, batch_by_week):
     print("Getting repos list...")
     if not batch_by_week:
         repos = get_repos(lang, limit, cutoff_date, repos_dir)
     else:
-        repos = get_repos_by_week(lang, limit, cutoff_date, repos_dir)
+        repos = get_repos_by_week(lang, limit, init_date, cutoff_date, repos_dir)
+
+    print("Saving repo metadata...")
+    _save_repo_metadata(repos, lang, meta_dir)
+
     print("Downloading %d repos..." % (len(repos)))
     with ThreadPoolExecutor() as executor:
 
@@ -608,8 +634,6 @@ def run(lang, file_pattern, filter_fn, transform_fn, limit, cutoff_date, overwri
     num_tokens = token_length(examples)
     print("\t%d tokens" % (num_tokens))
 
-    print("Saving repo metadata...")
-    _save_repo_metadata(repos, lang, meta_dir)
 
     _save_splits(
         splits=make_splits(examples, args.eval_ratio),
@@ -630,6 +654,7 @@ def coq(args):
         filter_fn=filter_coq,
         transform_fn=standard_transform,
         limit=args.limit,
+        init_date=args.init_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
         dedup_chunk_size=args.dedup_chunk_size,
@@ -647,6 +672,7 @@ def isabelle(args):
         filter_fn=filter_isabelle,
         transform_fn=transform_isabelle,
         limit=args.limit,
+        init_date=args.init_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
         dedup_chunk_size=args.dedup_chunk_size,
@@ -663,6 +689,7 @@ def matlab(args):
         filter_fn=filter_matlab,
         transform_fn=standard_transform,
         limit=args.limit,
+        init_date=argsinit_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
         dedup_chunk_size=args.dedup_chunk_size,
@@ -679,6 +706,7 @@ def lean(args):
         filter_fn=filter_lean,
         transform_fn=transform_lean,
         limit=args.limit,
+        init_date=args.init_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
         dedup_chunk_size=args.dedup_chunk_size,
@@ -700,6 +728,11 @@ def main(args):
         lean(args)
 
 def setup(args):
+    if args.init_date is not None:
+        init_date = datetime.fromisoformat(args.init_date)
+        # Hard set timezone to UTC to avoid ambiguity.
+        init_date = init_date.replace(tzinfo=timezone.utc)
+        args.init_date = init_date
     if args.cutoff_date is not None:
         cutoff_date = datetime.fromisoformat(args.cutoff_date)
         # Hard set timezone to UTC to avoid ambiguity.
@@ -741,6 +774,13 @@ if __name__ == '__main__':
     parser.add_argument('--meta-dir', type=str, default='meta_json')
     parser.add_argument('--repos-dir', type=str, default='github-repos')
     parser.add_argument('--eval-ratio', type=int, default=0.005)
+    parser.add_argument('--init-date', type=str, required=False, 
+            default='2009-01-01', help=(
+                "An ISO date string, ",
+                "If --batch-by-week is set, only searches for repos before",
+                "this date. Useful for new languages like Lean",
+            )
+    )
     parser.add_argument(
         '--cutoff-date', type=str, required=False, default='2023-04-01',
         help='An ISO date string, such as 2011-11-04. Will retrieve the repos at a '
