@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import re
 import hashlib
 import glob
@@ -140,13 +141,20 @@ def get_repos(lang, limit, cutoff_date, out_dir):
             break
     return repositories
 
-@backoff.on_exception(backoff.expo, GithubException)
+@backoff.on_exception(
+        backoff.expo, 
+        GithubException, 
+        on_backoff=lambda details: print(
+            f"Backing off search_week function by {details['wait']}"
+        )
+)
 def search_week(g, lang, left, right):
-    return [x for x in g.search_repositories(
+    return g.search_repositories(
             query=f"language:{lang} created:{left}..{right}",
             sort='stars'
-    )]
- 
+    )
+
+RATE_LIMIT_WAIT_TIME=60*60+1 
 def get_repos_by_week(lang, limit, cutoff_date, out_dir):
     g = Github(GITHUB_ACCESS_TOKEN)
 
@@ -155,8 +163,22 @@ def get_repos_by_week(lang, limit, cutoff_date, out_dir):
     num_weeks = int((cutoff_date - datetime.fromisoformat("2009-01-01").replace(tzinfo=timezone.utc))/timedelta(days=7))
     
     for left, right in tqdm(week_intervals(end=cutoff_date), total=num_weeks):
-        results = search_week(g, lang, left, right)
-        for repo in results:
+        results = iter(search_week(g, lang, left, right))
+        while True: 
+            try: 
+                while True:
+                    attempt=1
+                    try: 
+                        repo = next(results)
+                    except GithubException:
+                        now = datetime.now().strftime("%H:%M")
+                        print(f"hit rate limit, sleeping for one hour starting {now}...")
+                        print(f"this was attempt number {attempt} from this location...")
+                        attempt+=1
+                        time.sleep(RATE_LIMIT_WAIT_TIME) 
+            except StopIteration:
+                break
+
             author, repo_name = repo.full_name.split('/')
             info = {
                 'author': author,
@@ -167,10 +189,8 @@ def get_repos_by_week(lang, limit, cutoff_date, out_dir):
             repositories.append(info)
 
             if len(repositories) == limit:
-                break
-        if len(repositories) ==limit:
-            break
-
+                break 
+                
     return repositories
 
 
@@ -573,6 +593,10 @@ def run(lang, file_pattern, filter_fn, transform_fn, limit, cutoff_date, overwri
         repos = get_repos(lang, limit, cutoff_date, repos_dir)
     else:
         repos = get_repos_by_week(lang, limit, cutoff_date, repos_dir)
+
+    print("Saving repo metadata...")
+    _save_repo_metadata(repos, lang, meta_dir)
+
     print("Downloading %d repos..." % (len(repos)))
     with ThreadPoolExecutor() as executor:
 
@@ -608,8 +632,6 @@ def run(lang, file_pattern, filter_fn, transform_fn, limit, cutoff_date, overwri
     num_tokens = token_length(examples)
     print("\t%d tokens" % (num_tokens))
 
-    print("Saving repo metadata...")
-    _save_repo_metadata(repos, lang, meta_dir)
 
     _save_splits(
         splits=make_splits(examples, args.eval_ratio),
