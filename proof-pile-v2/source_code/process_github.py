@@ -35,7 +35,7 @@ TEXT_MAX_SIZE = 1048575  # in bytes
 MAX_NUMERICAL_DENSITY = .5
 MAX_SIZE_BYTES=1e9 # maximum size of repo tarball
 
-INIT_DATE="2023-01-01" # iso datestring
+INIT_DATE="2009-01-01" # iso datestring
 
 def week_intervals(
         start=datetime.fromisoformat(INIT_DATE).replace(tzinfo=timezone.utc), 
