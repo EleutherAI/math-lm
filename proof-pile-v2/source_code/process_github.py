@@ -56,8 +56,18 @@ def week_intervals(
 
         left += timedelta(days=7)
         right += timedelta(days=7)
-        
-@backoff.on_exception(backoff.expo, requests.exceptions.RequestException)
+
+
+backoff_message = lambda _: print(
+        f"Got rate limited on downloads.", 
+        f"Waiting 1 hour starting {datetime.now().strftime('%H:%M')}"
+)
+@backoff.on_exception(
+        backoff.constant, 
+        requests.exceptions.RequestException, 
+        interval=3600,
+        on_backoff=backoff_message
+)
 def _get_dir_from_repo(author, repo, sha, save_path, overwrite):
     if (not overwrite) and Path(save_path).exists():
         return
@@ -68,6 +78,7 @@ def _get_dir_from_repo(author, repo, sha, save_path, overwrite):
     )
 
     response = requests.get(tarball_url, stream=True)
+    response.raise_for_status()
     cumsize = 0 
     if response.status_code == 200:
         with open(archive_path, 'wb') as f:
@@ -689,7 +700,7 @@ def matlab(args):
         filter_fn=filter_matlab,
         transform_fn=standard_transform,
         limit=args.limit,
-        init_date=argsinit_date,
+        init_date=args.init_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
         dedup_chunk_size=args.dedup_chunk_size,
