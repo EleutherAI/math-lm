@@ -172,14 +172,14 @@ def search_week(g, lang, left, right):
     )
 
 RATE_LIMIT_WAIT_TIME=60*60+1 
-def get_repos_by_week(lang, limit, init_date, cutoff_date, out_dir):
+def get_repos_by_week(lang, limit, init_date, search_end_date, cutoff_date, out_dir):
     g = Github(GITHUB_ACCESS_TOKEN)
 
     repositories = []
 
     num_weeks = int((cutoff_date - init_date)/timedelta(days=7))
     
-    for left, right in tqdm(week_intervals(start=init_date, end=cutoff_date), total=num_weeks):
+    for left, right in tqdm(week_intervals(start=init_date, end=search_end_date), total=num_weeks):
         results = iter(search_week(g, lang, left, right))
         while True: 
             try: 
@@ -605,7 +605,7 @@ def _get_isabelle_test_names(overwrite):
 # --
 
 
-def run(lang, file_pattern, filter_fn, transform_fn, limit, init_date, cutoff_date, overwrite, overwrite_repos_list, dedup_chunk_size, data_dir, meta_dir, repos_dir, batch_by_week):
+def run(lang, file_pattern, filter_fn, transform_fn, limit, init_date, search_end_date, cutoff_date, overwrite, overwrite_repos_list, dedup_chunk_size, data_dir, meta_dir, repos_dir, batch_by_week):
     print("Getting repos list...")
     repos_list_path = os.path.join(meta_dir, f'{lang}-repos.jsonl')
     if os.path.isfile(repos_list_path) and not overwrite_repos_list:
@@ -615,7 +615,7 @@ def run(lang, file_pattern, filter_fn, transform_fn, limit, init_date, cutoff_da
     elif not batch_by_week:
         repos = get_repos(lang, limit, cutoff_date, repos_dir)
     else:
-        repos = get_repos_by_week(lang, limit, init_date, cutoff_date, repos_dir)
+        repos = get_repos_by_week(lang, limit, init_date, search_end_date, cutoff_date, repos_dir)
 
     print("Saving repo metadata...")
     _save_repo_metadata(repos, lang, meta_dir)
@@ -676,6 +676,7 @@ def coq(args):
         transform_fn=standard_transform,
         limit=args.limit,
         init_date=args.init_date,
+        search_end_date=args.search_end_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
         overwrite_repos_list=args.overwrite_repos_list,
@@ -695,6 +696,7 @@ def isabelle(args):
         transform_fn=transform_isabelle,
         limit=args.limit,
         init_date=args.init_date,
+        search_end_date=search_end_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
         overwrite_repos_list=args.overwrite_repos_list,
@@ -713,6 +715,7 @@ def matlab(args):
         transform_fn=standard_transform,
         limit=args.limit,
         init_date=args.init_date,
+        search_end_date=args.search_end_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
         overwrite_repos_list=args.overwrite_repos_list,
@@ -731,6 +734,7 @@ def lean(args):
         transform_fn=transform_lean,
         limit=args.limit,
         init_date=args.init_date,
+        search_end_date=args.search_end_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
         overwrite_repos_list=args.overwrite_repos_list,
@@ -806,6 +810,9 @@ if __name__ == '__main__':
                 "If --batch-by-week is set, only searches for repos before",
                 "this date. Useful for new languages like Lean",
             )
+    )
+    parser.add_argument('--search-end-date', type=str, required=False, 
+            help="If batch_by_week, sets date for the end of the search"
     )
     parser.add_argument(
         '--cutoff-date', type=str, required=False, default='2023-04-01',
