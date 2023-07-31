@@ -14,6 +14,7 @@ import nbformat
 from functools import reduce, partial
 import tiktoken
 from nbconvert.exporters import MarkdownExporter
+from langid.langid import LanguageIdentifier, model
 
 import code
 
@@ -343,7 +344,7 @@ def julia_filter_strict(ex):
     return julia_filter(ex) and julia_whitelist_rexp.search(ex["content"])
 
 
-def tex_filter_rexp(example, rexp):
+def tex_filter(example, identifier):
     if not standard_filter(example, text_max_size=10_000_000): 
         return False
 
@@ -354,9 +355,6 @@ def tex_filter_rexp(example, rexp):
         return False
 
     text = example["content"]
-
-    if rexp.search(text):
-        return False
 
     if "gnuplot" in text:
         return False
@@ -375,12 +373,10 @@ def tex_filter_rexp(example, rexp):
     ]
 
     found = [x for x in keywords if x in text]
-    return bool(found)
+    if not found:
+        return False
 
-
-h = re.compile("[\u0370-\u18aA\u3000-\U0001047f]")
-tex_filter = partial(tex_filter_rexp, rexp=h)
-
+    return identifier.classify(text)[0]=="en"
 
 def jupyter_notebook_filter(example):
     """
@@ -531,7 +527,9 @@ def main(args):
         elif lang == "cpp":
             ds = ds.filter(cpp_filter, **filter_kwargs)
         elif lang == "tex":
-            ds = ds.filter(tex_filter, **filter_kwargs)
+            identifier = LanguageIdentifier.from_modelstring(model, norm_probs=True)
+            bundled_tex_filter = partial(tex_filter, identifier=identifier)
+            ds = ds.filter(bundled_tex_filter, **filter_kwargs)
         elif lang == "julia":
             ds = ds.filter(julia_filter, **filter_kwargs)
         elif lang == "fortran": 
