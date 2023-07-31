@@ -97,15 +97,20 @@ def _get_dir_from_repo(author, repo, sha, save_path, overwrite):
 
 
 def _delete_files_except_pattern(path, pattern):
-    for f in os.listdir(path):
-        f_path = os.path.join(path, f)
-        if os.path.isfile(f_path):
+    if os.path.exists(path):
+        files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        dirs = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+
+        for f in files:
+            f_path = os.path.join(path, f)
             if not re.search(pattern, f):
                 os.remove(f_path)
-        elif os.path.islink(f_path):
-            os.remove(f_path)
-        elif os.path.isdir(f_path):
-            _delete_files_except_pattern(f_path, pattern)
+            elif os.path.islink(f_path):
+                os.remove(f_path)
+
+        for d in dirs:
+            _delete_files_except_pattern(os.path.join(path, d), pattern)
+
 
 @backoff.on_exception(backoff.expo, GithubException)
 def _get_sha(repo, cutoff_date):
@@ -600,9 +605,14 @@ def _get_isabelle_test_names(overwrite):
 # --
 
 
-def run(lang, file_pattern, filter_fn, transform_fn, limit, init_date, cutoff_date, overwrite, dedup_chunk_size, data_dir, meta_dir, repos_dir, batch_by_week):
+def run(lang, file_pattern, filter_fn, transform_fn, limit, init_date, cutoff_date, overwrite, overwrite_repos_list, dedup_chunk_size, data_dir, meta_dir, repos_dir, batch_by_week):
     print("Getting repos list...")
-    if not batch_by_week:
+    repos_list_path = os.path.join(meta_dir, f'{lang}-repos.jsonl')
+    if os.path.isfile(repos_list_path) and not overwrite_repos_list:
+        print('found saved repos list...')
+        with open(repos_list_path) as f:
+            repos = ndjson.load(f)
+    elif not batch_by_week:
         repos = get_repos(lang, limit, cutoff_date, repos_dir)
     else:
         repos = get_repos_by_week(lang, limit, init_date, cutoff_date, repos_dir)
@@ -668,6 +678,7 @@ def coq(args):
         init_date=args.init_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
+        overwrite_repos_list=args.overwrite_repos_list,
         dedup_chunk_size=args.dedup_chunk_size,
         data_dir=args.data_dir,
         meta_dir=args.meta_dir,
@@ -686,6 +697,7 @@ def isabelle(args):
         init_date=args.init_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
+        overwrite_repos_list=args.overwrite_repos_list,
         dedup_chunk_size=args.dedup_chunk_size,
         data_dir=args.data_dir,
         meta_dir=args.meta_dir,
@@ -703,6 +715,7 @@ def matlab(args):
         init_date=args.init_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
+        overwrite_repos_list=args.overwrite_repos_list,
         dedup_chunk_size=args.dedup_chunk_size,
         data_dir=args.data_dir,
         meta_dir=args.meta_dir,
@@ -720,6 +733,7 @@ def lean(args):
         init_date=args.init_date,
         cutoff_date=args.cutoff_date,
         overwrite=args.overwrite,
+        overwrite_repos_list=args.overwrite_repos_list,
         dedup_chunk_size=args.dedup_chunk_size,
         data_dir=args.data_dir,
         meta_dir=args.meta_dir,
@@ -781,6 +795,7 @@ if __name__ == '__main__':
     parser.add_argument('--dedup-chunk-size', type=int, default=2048)
     parser.add_argument('--shard-size', type=int, default=50000)
     parser.add_argument('--overwrite', action='store_true')
+    parser.add_argument('--overwrite-repos-list', action='store_true')
     parser.add_argument('--data-dir', type=str, default='data_jsonl')
     parser.add_argument('--meta-dir', type=str, default='meta_json')
     parser.add_argument('--repos-dir', type=str, default='github-repos')
