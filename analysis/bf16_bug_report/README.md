@@ -14,7 +14,7 @@ When finetuning Llama-2 models in bfloat16, after the first training step there 
 ## Toy case:
 Loading a bfloat16 checkpoint and training in bf16 causes a loss jump that training does not recover from. In fact, we have verified that after the loss jump, the loss does not decrease faster than it does from a random initialization. 
 
-The following graph depicts four toy training runs, all using roughly 1B parameter models and trained in bf16. The run names on the legend correspond to the names of config files in this directory. 
+The following graph depicts four toy training runs, all using roughly 1B parameter Llama-architecture models and trained in bf16. The run names on the legend correspond to the names of config files in this directory. 
 
 <img src="./toy_bf16.png" width="450">
 
