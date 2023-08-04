@@ -4,7 +4,9 @@
 Deepspeed commit: `71e51925f4b0be6014ac5586cfa3a5c93a63a08e` on branch math-lm
     - This is almost identical to DeeperSpeed main, except Deepspeed pull [#3790](https://github.com/microsoft/DeepSpeed/pull/3790/files) is merged and the optimizer is hardcoded to the ZeRO optimizer on line 1197 of `engine.py`. Note that this issue still occurs without the hardcoded optimizer class, in which case BF16Optimizer gets used. 
 
-NeoX commit: `6e19615ccc346ec09a9d975a66c6d233d12133ed` on branch math-lm. This is almost exactly the same as the latest main `8b3f1c28555ccad92e3b0906c71528be712c95d6`, except `tools/datasets/corpora.py` works slightly differently and the branch includes a lot of extra configs. 
+NeoX commit: `6e19615ccc346ec09a9d975a66c6d233d12133ed` on branch math-lm. This is almost exactly the same as the latest main `8b3f1c28555ccad92e3b0906c71528be712c95d6`, except in `megatron/checkpointing.py:load_checkpoint()` `neox_args.finetune` is separated out into separate args (<https://github.com/EleutherAI/gpt-neox/compare/main...math-lm#diff-122925dfa160fba3c00803abba3577ef0d5aa5ab48989032a63d41c91f2a8002R228-R252>).
+
+Also, `tools/datasets/corpora.py` works slightly differently and the branch includes a lot of extra configs. 
 
 You can find the config files for the runs referenced in this report in this directory. Note the config files contain paths to data that are specific to the BYU cluster, however we expect this issue would replicate given any training data. All runs are done on a single node with a `dp_world_size` of 8. 
 
