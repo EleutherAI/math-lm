@@ -2,7 +2,7 @@
 
 ## Environment:
 Deepspeed commit: `71e51925f4b0be6014ac5586cfa3a5c93a63a08e` on branch math-lm
-    - This is almost identical to DeeperSpeed main, except Deepspeed pull [#370](https://github.com/microsoft/DeepSpeed/pull/3790/files) is merged and the optimizer is hardcoded to the ZeRO optimizer on line 1197 of `engine.py`. Note that this issue still occurs without the hardcoded optimizer class, in which case BF16Optimizer gets used. 
+    - This is almost identical to DeeperSpeed main, except Deepspeed pull [#3790](https://github.com/microsoft/DeepSpeed/pull/3790/files) is merged and the optimizer is hardcoded to the ZeRO optimizer on line 1197 of `engine.py`. Note that this issue still occurs without the hardcoded optimizer class, in which case BF16Optimizer gets used. 
 
 NeoX commit: `6e19615ccc346ec09a9d975a66c6d233d12133ed` on branch math-lm. This is almost exactly the same as the latest main `8b3f1c28555ccad92e3b0906c71528be712c95d6`, except `tools/datasets/corpora.py` works slightly differently and the branch includes a lot of extra configs. 
 
