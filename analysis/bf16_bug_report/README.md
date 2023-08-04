@@ -16,7 +16,7 @@ Loading a bfloat16 checkpoint and training in bf16 causes a loss jump that train
 
 The following graph depicts four toy training runs, all using roughly 1B parameter models and trained in bf16. The run names on the legend correspond to the names of config files in this directory. 
 
-<img src="./toy_bf16.png" width="150">
+<img src="./toy_bf16.png" width="450">
 
 The grey curve is a training run initialized from scratch, and behaves as expected. The green curve is the grey run restarted from a checkpoint, and this again works as expected. The purple run loads a checkpoint with the same weights as the green run, except the optimizer state is deleted from the checkpoint. This is intended to simulate what happens when initializing from a pretrained Llama-2 checkpoint, and causes a loss jump the model does not recover from. 
 
@@ -25,7 +25,7 @@ The brown run is a hacky fix to the issue. In order to load checkpoint with no o
 ## Fix fails on Llama 2
 Here is how we tried to apply the fix from the toy case to Llama-2: First, we train a model with Llama 2 architecture from scrach for some small number of steps and save a checkpoint (this run is `llama-2_init-state`. Then, we replace the weights in this checkpoint with the pre-trained weights and replace the tensors in the optimizer state with zero tensors. Unfortunately, this still causes a loss jump.
 
-<img src="./llama-2_bf16.png" width="150">
+<img src="./llama-2_bf16.png" width="450">
 
 ## Summary
 - We are uncertain why loading bfloat16 checkpoints that have no optimizer results in a loss jump that the model does not recover from. 
