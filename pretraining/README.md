@@ -41,9 +41,7 @@ CUDA_VISIBLE_DEVICES="" python convert_raw_llama_weights_to_hf.py --input_dir /p
 
 Next, check out the commit used to train the model you are replicating.
 
-* 7b: https://github.com/EleutherAI/gpt-neox/tree/math-lm-2-rotary
-
-* 34b: https://github.com/EleutherAI/gpt-neox/commit/e59c873ee779df2d7f182deb6ad34f290a077ea4
+* 7b / 34b: https://github.com/EleutherAI/gpt-neox/commit/e59c873ee779df2d7f182deb6ad34f290a077ea4
 
 ### Launching Training
 
