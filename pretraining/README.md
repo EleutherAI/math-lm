@@ -49,6 +49,10 @@ Next, check out the commit used to train the model you are replicating.
 
 Then, edit the provided YML files to set paths based on your own system's saved locations for checkpoints and data files, and edit the SLURM job script as specified (using ) or run the job across multiple nodes using your own system's orchestration.
 
+**Tip**: Note that the global batch size will be scaled by your number of nodes. Therefore, if running on a number of nodes different from 32 you should scale gradient accumulation steps accordingly. 
+
+We used a batch size of 4M tokens. To calculate global batch size, you should compute `seq_len * num_gpus * ( train_microbatch_size_per_gpu * gradient_accumulation_steps) / (model_parallel_size * max(pipeline_parallel_size, 1))` .
+
 
 ## Contents
 
