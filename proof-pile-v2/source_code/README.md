@@ -41,4 +41,4 @@ The stack is processed in `./process_source_code.py`
 ## Isabelle Proofsteps
 Isabelle Proofsteps are processed in `./process_isabelle_proofsteps.py`.
 
-To process the Isabelle proofsteps, one needs to extract/download the PISA dataset using code available on https://github.com/albertqjiang/Portal-to-ISAbelle/tree/main, and then run `./process_isabelle_proofsteps.py` with the correct paths to the AFP extractions, the Standard library extractions and PISA's test set (`universal_test_theorems`).
+To process the Isabelle proofsteps, one needs to extract/download the PISA dataset using code available on https://github.com/albertqjiang/Portal-to-ISAbelle/, and then run `./process_isabelle_proofsteps.py` with the correct paths to the AFP extractions, the Standard library extractions and PISA's test set (`universal_test_theorems`).
