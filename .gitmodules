@@ -1,6 +1,3 @@
 [submodule "gpt-neox"]
 	path = gpt-neox
 	url = https://github.com/EleutherAI/gpt-neox.git
-[submodule "proof-pile-v2/source_code/lean-training-data"]
-	path = proof-pile-v2/source_code/lean-training-data
-	url = https://github.com/semorrison/lean-training-data.git
