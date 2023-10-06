@@ -1,3 +1,6 @@
 [submodule "gpt-neox"]
 	path = gpt-neox
 	url = https://github.com/EleutherAI/gpt-neox.git
+[submodule "memorization"]
+	path = memorization
+	url = https://github.com/wellecks/contamination.git
