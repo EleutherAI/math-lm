@@ -38,6 +38,13 @@ The stack is processed in `./process_source_code.py`
 - Do we want Chinese comments in our Python?
 - Currently the jupyter notebook filtering is strict. We can add more conditions if we want more data.
 
+## Lean Proofsteps
+Within the `algebraic_stack` directory, run 
+```
+git clone https://github.com/semorrison/lean-training-data.git
+```
+Then, `cd` into the `lean-training-data` directory and follow the setup instructions in `README.md`. Finally, run `process_lean_proofsteps.py --vocab /path/to/llama/tokenizer.model` and you will find the preprocessed data in `data_jsonl`.
+
 ## Isabelle Proofsteps
 Isabelle Proofsteps are processed in `./process_isabelle_proofsteps.py`.
 
