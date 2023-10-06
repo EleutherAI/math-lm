@@ -1,17 +1,7 @@
-# Proof Pile v2
+# Proof-Pile-2
 
-This directory contains code for downloading and preprocessing the `proof-pile-v2` dataset. Additionally, the notebook
-`analysis.ipynb` contains utilities for visualizing and manually inspecting the data. 
+This directory contains code for downloading Proof-Pile-2 data from its original source and reapplying our filtering and preprocessing methodology. 
+- AlgebraicStack: the `algebraic_stack` directory contains code for reproducing the AlgebraicStack. This includes refiltering the Stack, downloading certain language subsets directly from Github, reproducing the Lean proofsteps dataset, and reproducing the Isabelle proofsteps dataset.
+- ArXiv: we do not apply any further preprocessing to the Redpajama ArXiv subset, however, our downloading script replicates the train-validation-test split used in our paper. 
+- OpenWebMath: we apply no filtering or preprocessing to OpenWebMath, therefore this repository contains no corresponding code.
 
-Preprocessed data is hosted [on Huggingface](https://huggingface.co/datasets/zhangirazerbayev/proof-pile-v2-dev). There may be discrepancies between the data on Huggingface and the data produced by these scripts due to one being updated before the other or changes in the upstream data sources.
-
-Instructions for each of the subsets are given below: 
-- `AMPS`: Run `download_from_pilev2.sh` (works only on the Stability cluster), then run `python raw_pilev2_to_jsonl.py
-  -c $NUM_CPUS`. Data will be saved to the `data_jsonl` directory. 
-- `arXiv`: Same as above. 
-- `issues_diffs`: Run `download_from_pilev2.sh`, except the Python script is called `filter_issues_diffs.py`. It still
-  has a `-c` argument. Note that the issues and diffs subsets must be built AFTER `source_code`.
-- `source_code`: Our source code comes from two sources
-    - Subset download from `bigcode/the-stack-dedup`: Run `python process_stack.py -c $NUM_CPUS` to build all language subsets. To build only the subsets for some specific languages, run `python process_stack.py -c $NUM_CPUS -l python cpp`, for example. The preprocessed data will be saved to `data_jsonl`. The generated files in the `meta_json` directory are metadata useful for analysis and building the issues and diffs dataset. 
-    - Subset downloaded directly through the Github rest API: Run `python process_github.py`, or for example `python process_github.py --langs coq`. The default output directory is `github-code`. 
-- `stack_exchange`: Run `python process_stack_exchange.py`. Data is saved in the `data_jsonl` directory.
