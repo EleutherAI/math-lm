@@ -20,13 +20,6 @@ git clone https://github.com/semorrison/lean-training-data.git
 ```
 Then, `cd` into the `lean-training-data` directory and follow the setup instructions in `README.md`. Finally, run `process_lean_proofsteps.py --vocab /path/to/llama/tokenizer.model` and you will find the preprocessed data in `data_jsonl`.
 
-## Lean Proofsteps
-Within the `algebraic_stack` directory, run 
-```
-git clone https://github.com/semorrison/lean-training-data.git
-```
-Then, `cd` into the `lean-training-data` directory and follow the setup instructions in `README.md`. Finally, run `process_lean_proofsteps.py --vocab /path/to/llama/tokenizer.model` and you will find the preprocessed data in `data_jsonl`.
-
 ## Isabelle Proofsteps
 Isabelle Proofsteps are processed in `./process_isabelle_proofsteps.py`.
 
