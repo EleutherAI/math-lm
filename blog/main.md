@@ -45,7 +45,7 @@ Up until now, machine learning approaches to formal theorem proving have either 
 ### Memorization
 Language model evaluations are partly a memorization test and partly a generalization test, but it is often unclear in what proportion. We seek to quantify the degree to which our evaluations are explained by memorization by looking for MATH reference solutions in our training set. Surprisingly, Llemma doesn't perform any better on MATH problems that are contained in its training set. In the table below, a "hit" denotes a 30-gram overlap betweeen an MATH reference and the training set. 
 
-![memorization chart](memorization.png)
+<img src="memorization.png" width="80%">
 
 We encourage other researchers to reproduce our analysis and investigate more reliable methods for detecting memorization. 
 
