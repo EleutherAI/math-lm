@@ -16,7 +16,7 @@ For the arXiv portion of the Proof-Pile-2, we use the RedPajama arXiv subset. Ou
 
 **Web**. The [OpenWebMath](https://huggingface.co/datasets/open-web-math/open-web-math) dataset, a recent 14.7 billion token dataset of mathematical web pages, is a sister project to Llemma. OpenWebMath was created by building a complete CommonCrawl processing pipeline, including HTML extraction, classifier-based filtering, and deduplication steps. 
 
-**Code**. The modern mathematician increasingly depends on computational tools, from offloading difficult calculations to programs, to using software to verify proofs. Motivated by these applications, the Proof-Pile-2 includes 10 billion tokens of mathematical code, spanning numerical computing, computer algebra, and formal theorem proving. This training data allows for some interesting evaluations—more on this later. 
+**Code**. The modern mathematician increasingly relies on computational tools, from offloading difficult calculations to programs, to using software to verify proofs. Motivated by these applications, the Proof-Pile-2 includes 10 billion tokens of mathematical code, spanning numerical computing, computer algebra, and formal theorem proving. This training data allows for some interesting evaluations—more on this later. 
 
 ### Training
 We trained Llemma 7B for 200B tokens and Llemma 34B for 50B tokens. This amounts to 23,000 A100 hours for Llemma 7B and 47,000 A100 hours for the 34B. Our training stack is built on a number of fantastic open source projects, including [GPT-NeoX](https://github.com/EleutherAI/gpt-neox/tree/llemma) and [FlashAttention-2](https://github.com/Dao-AILab/flash-attention). 
@@ -24,7 +24,7 @@ We trained Llemma 7B for 200B tokens and Llemma 34B for 50B tokens. This amounts
 ### Evaluation
 Our first evaluation setting is chain-of-thought mathematical reasoning, measured by benchmarks such as MATH and GSM8k. This is a setting where open source base models have lagged: Llama-2 and Code Llama's MATH scores are in the mid-single digits. Llemma achieves a significant improvement on these tasks, and even surpasses Minerva when controlled for model parameters. 
 
-![Put the chart from the first page of the paper here]()
+![Put the chart from the first page of the paper here, and a gsm8k version]()
 
 The code subset of the Proof-Pile-2 endows Llemma with capabilities Minerva lacks without additional finetuning. In this blog post, we'll discuss *formal theorem proving*. Our paper contains additional results on a Python-aided problem solving task. 
 
