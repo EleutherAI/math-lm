@@ -1,12 +1,14 @@
 # Llemma: An Open Language Model For Mathematics"
 
+![put sample model output here]()
+
 Today we release *Llemma*: 7 billion and 34 billion parameter language models for mathematics. The Llemma models were initialized with Code Llama weights, then trained on the Proof-Pile-2, a 55 billion token dataset of quantitative reasoning documents.
 
-Our work is similar to [Minerva](https://blog.research.google/2022/06/minerva-solving-quantitative-reasoning.html), a model suite specialized for quantitative reasoning developed by Google Research last year. We don't achieve quite the same scale as Minerva, however, we perform better on an equi-parameter basis. Moreover, we make our model and dataset open-access and code open-source.
+Our work is similar to [Minerva](https://blog.research.google/2022/06/minerva-solving-quantitative-reasoning.html), a model suite specialized for quantitative reasoning developed by Google Research last year. We don't achieve quite the same scale as Minerva, however, we perform better on an equi-parameter basis. Moreover, we make our model and dataset open-access and our code open-source.
 
 Language models with strong quantitative reasoning capabilities are upstream of a number of emerging research areas, such as reward modeling, algorithmic reasoning, and formal mathematics. We hope that by providing researchers with a much stronger base model for reasoning applications, Llemma will accelerate progress on these problems.
 
-In a paradigm where scale begets ever stronger generalist models, specialized models have a short shelf life. However, by open sourcing our dataset and code, we aim to provide a durable method for turning leading open models into a quantitative reasoning specialists. 
+Because scale reliably produces better generalist models, specialized models have a short shelf life. However, by open sourcing our dataset and code, we hope they can be reused to turn the future's better open models into quantitative reasoning specialists. 
 
 ### Dataset
 
