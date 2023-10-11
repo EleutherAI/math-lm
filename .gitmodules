@@ -1,6 +1,9 @@
 [submodule "gpt-neox"]
 	path = gpt-neox
 	url = https://github.com/EleutherAI/gpt-neox.git
+[submodule "overlap"]
+	path = overlap
+	url = https://github.com/wellecks/overlap.git
 [submodule "finetunes"]
 	path = finetunes
 	url = https://github.com/zhangir-azerbayev/MetaMath.git
