@@ -469,6 +469,7 @@ def main(args):
             data_dir=f"data/{lang}",
             split="train",
             use_auth_token=use_auth_token,
+            revision="v1.2"
         )
 
         print("filtering dataset...")
