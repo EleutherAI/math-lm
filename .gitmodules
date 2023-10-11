@@ -1,3 +1,6 @@
 [submodule "gpt-neox"]
 	path = gpt-neox
 	url = https://github.com/EleutherAI/gpt-neox.git
+[submodule "llemma_formal2formal"]
+	path = llemma_formal2formal
+	url = https://github.com/wellecks/llemma_formal2formal.git
