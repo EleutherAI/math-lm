@@ -20,7 +20,7 @@ For the arXiv portion of the Proof-Pile-2, we use the RedPajama arXiv subset. Ou
 
 **Web**. The [OpenWebMath](https://huggingface.co/datasets/open-web-math/open-web-math) dataset, a recent 14.7 billion token dataset of mathematical web pages, is a sister project to Llemma. OpenWebMath was created by building a complete CommonCrawl processing pipeline, including HTML extraction, classifier-based filtering, and deduplication steps. 
 
-**Code**. The modern mathematician increasingly relies on computational tools, from offloading difficult calculations to programs, to using software to verify proofs. Motivated by these applications, the Proof-Pile-2 includes 10 billion tokens of mathematical code, spanning numerical computing, computer algebra, and formal theorem proving. This training data allows for some interesting evaluations—more on this later. 
+**Code**. The modern mathematician increasingly relies on computational tools, from offloading difficult calculations to programs, to using software to verify proofs. Motivated by these applications, the Proof-Pile-2 includes 11 billion tokens of mathematical code, spanning numerical computing, computer algebra, and formal theorem proving. This training data allows for some interesting evaluations—more on this later. 
 
 ### Training
 We trained Llemma 7B for 200B tokens and Llemma 34B for 50B tokens. This amounts to 23,000 A100 hours for Llemma 7B and 47,000 A100 hours for the 34B. Our training stack is built on a number of fantastic open source projects, including [GPT-NeoX](https://github.com/EleutherAI/gpt-neox/tree/llemma) and [FlashAttention-2](https://github.com/Dao-AILab/flash-attention). 
