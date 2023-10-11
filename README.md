@@ -6,7 +6,7 @@ Repository for [Llemma: an open language model for mathematics [Azerbayev et al 
 This repository hosts data and training code related to the following artifacts:
 
 - [**Llemma 7b**]() [TODO: huggingface links when available]
-- [**Llemma 42b**]()
+- [**Llemma 34b**]()
 - [**Proof-Pile-2**]()
     - [**AlgebraicStack**]()
 
