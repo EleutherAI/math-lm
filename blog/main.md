@@ -51,7 +51,7 @@ Language model evaluations are partly a memorization test and partly a generaliz
 
 <img src="memorization.png" width="50%">
 
-We open-source the tools we used for our analysis, and encourage other researchers to investigate other ways to detect and quantify the effects of memorization. 
+We [open-source the tools](https://github.com/wellecks/overlap) we used for our analysis, and encourage other researchers to investigate other ways to detect and quantify the effects of memorization. 
 
 ### Future directions 
 Llemma is a pretrained base model; therefore, our evaluations are only a starting point for further research into the mathematical abilities of language models. To conclude, we note a few promising directions that Llemma might enable. 
