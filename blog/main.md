@@ -4,7 +4,7 @@
 
 Today we release *Llemma*: 7 billion and 34 billion parameter language models for mathematics. The Llemma models were initialized with Code Llama weights, then trained on the Proof-Pile-2, a 55 billion token dataset of mathematical and scientific documents.
 
-Our work is similar to [Minerva](https://blog.research.google/2022/06/minerva-solving-quantitative-reasoning.html), a model suite specialized for quantitative reasoning developed by Google Research last year. We don't achieve quite the same scale as Minerva, however, we perform better on an equi-parameter basis. Moreover, we make our model and dataset open-access and our code open-source.
+Our work parallels [Minerva](https://blog.research.google/2022/06/minerva-solving-quantitative-reasoning.html), a model suite specialized for quantitative reasoning developed by Google Research last year. While we don't achieve quite the same scale as Minerva, our Llemma models perform better on an equi-parameter basis. Moreover, we make our model and dataset open-access and our code open-source.
 
 Language models with strong mathematical reasoning capabilities are upstream of a number of emerging research areas, such as reward modeling, algorithmic reasoning, and formal mathematics. We hope that by providing researchers with a much stronger base model for reasoning applications, Llemma will accelerate progress on these problems.
 
@@ -12,7 +12,7 @@ Because scale reliably produces better generalist models, specialized models oft
 
 ### Dataset
 
-The first step in developing Llemma was to assemble a large, high quality quantitative reasoning dataset. Minerva used 38 billion unique tokens consisting of arXiv and math web pages. Our dataset, the Proof-Pile-2, contains arXiv, web data, and code for a total of 55B unique tokens. 
+The first step in developing Llemma was to assemble a large, high-quality quantitative reasoning dataset. Minerva used 38 billion unique tokens consisting of arXiv and math web pages. Our dataset, the Proof-Pile-2, contains arXiv, web data, and code for a total of 55B unique tokens. 
 
 <img src="./data.png" width="50%"/>
 
