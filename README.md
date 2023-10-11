@@ -16,7 +16,7 @@ Additional evaluation code is in a [fork of the Eleuther LM Evaluation Harness](
 
 ## Overview 
 This repository contains the following directories
-- `proof-pile-v2`: scripts for downloading and preprocessing data.
+- `proof_pile_2`: scripts for downloading and preprocessing data.
 - `gpt-neox`: git submodule containing a modified branch of `EleutherAI/gpt-neox`
 - `finetunes`: git submodule containing scripts for the fine-tuning experiments
 - `llemma_formal2formal`: git submodule containing scripts for the formal2formal experiments
