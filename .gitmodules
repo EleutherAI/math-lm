@@ -1,12 +1,12 @@
 [submodule "gpt-neox"]
 	path = gpt-neox
 	url = https://github.com/EleutherAI/gpt-neox.git
-[submodule "overlap"]
-	path = overlap
-	url = https://github.com/wellecks/overlap.git
 [submodule "finetunes"]
 	path = finetunes
 	url = https://github.com/zhangir-azerbayev/MetaMath.git
 [submodule "llemma_formal2formal"]
 	path = llemma_formal2formal
 	url = git@github.com:wellecks/llemma_formal2formal.git
+[submodule "overlap"]
+	path = overlap
+	url = git@github.com:wellecks/overlap.git
