@@ -1,4 +1,4 @@
-# Llemma: An Open Language Model For Mathematics"
+# Llemma: An Open Language Model For Mathematics
 
 ![put sample model output here]()
 
