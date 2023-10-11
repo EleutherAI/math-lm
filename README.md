@@ -1,13 +1,37 @@
-# math-lm
-Repository for the Math-LM project, an open-source replication of the
-[Minerva](https://arxiv.org/abs/2206.14858) model. This repository hosts data and model training code. Evaluation code is hosted in a [fork of the lm-evaluation-harness](https://github.com/wellecks/lm-evaluation-harness).
+# `Llemma`: an open language model for mathematics
 
-A WIP build of the proof-pile-v2 dataset is currently hosted [on Huggingface](https://huggingface.co/datasets/zhangirazerbayev/proof-pile-v2-dev).
 
-Note that because this project contains submodules, you should clone this project with the `--recurse-submodules` flag or, alternatively, run `git submodule update --init --recursive` from within the project directory after cloning the project. After running `git pull`, you should also run `git submodule update`.
+Repository for [Llemma: an open language model for mathematics [Azerbayev et al 2023]]().
 
-This project contains the following directories
-- `analysis`: scaling law analysis of training runs. 
+This repository hosts data and training code related to the following artifacts:
+
+- [**Llemma 7b**]() [TODO: huggingface links when available]
+- [**Llemma 42b**]()
+- [**Proof-Pile-2**]()
+    - [**AlgebraicStack**]()
+
+
+This repository also contains submodules related to the overlap, fine-tuning, and theorem proving experiments described in the paper.
+Additional evaluation code is in a [fork of the Eleuther LM Evaluation Harness](https://github.com/wellecks/lm-evaluation-harness).
+
+## Overview 
+This repository contains the following directories
+- `proof-pile-v2`: scripts for downloading and preprocessing data.
 - `gpt-neox`: git submodule containing a modified branch of `EleutherAI/gpt-neox`
-- `proof-pile-v2`: scripts for downloading and preprocessing data. 
-- `task-finetunes`: scripts for fine-tuning models on task-specific datasets, such as MATH or GSM8k. 
+- `finetunes`: git submodule containing scripts for the fine-tuning experiments
+- `llemma_formal2formal`: git submodule containing scripts for the formal2formal experiments
+- `overlap`: git submodule containing the overlap and memorization analysis 
+
+Because this project contains submodules, you should clone this project with the `--recurse-submodules` flag or, alternatively, run `git submodule update --init --recursive` from within the project directory after cloning the project. After running `git pull`, you should also run `git submodule update`.
+
+## Citation
+Please cite the following:
+```
+@article{azerbayev2023llemma,
+    title={Llemma: an open language model for mathematics},
+    author={Zhangir Azerbayev and Hailey Schoelkopf and Keiran Paster and Marco Dos Santos and Stephen McAleer and Albert Q. Jiang and Jia Deng and Stella Biderman and Sean Welleck},
+    eprint={xyz.xyz},
+    archivePrefix={arXiv}
+    year={2023}
+}
+```
