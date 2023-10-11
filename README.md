@@ -15,7 +15,7 @@ This repository hosts data and training code related to the following artifacts:
 This repository also contains submodules related to the overlap, fine-tuning, and theorem proving experiments described in the paper.
 Additional evaluation code is in a [fork of the Eleuther LM Evaluation Harness](https://github.com/wellecks/lm-evaluation-harness).
 
-## Overview 
+## Directories 
 This repository contains the following directories
 - `proof_pile_2`: scripts for downloading and preprocessing data.
 - `gpt-neox`: git submodule containing a modified branch of `EleutherAI/gpt-neox`
