@@ -22,7 +22,7 @@ For example, here is a Llemma 34B solution to a MATH benchmark problem:
 
 Additionally, we found that Llemma models can use computational tools to solve problems, such as calculators, computer algebra systems, and formal theorem provers—more on this below.
 
-### Open models, data, and code
+#### Open models, data, and code
 Our work parallels [Minerva](https://blog.research.google/2022/06/minerva-solving-quantitative-reasoning.html), a model suite specialized for quantitative reasoning developed by Google Research last year. While we don't achieve quite the same scale as Minerva, our Llemma models perform better on an equi-parameter basis. Moreover, we make our [models](https://huggingface.co/EleutherAI) and [dataset](https://huggingface.co/EleutherAI) open-access and our [code](https://github.com/EleutherAI/math-lm) open-source.
 
 Language models with strong mathematical reasoning capabilities are upstream of a number of emerging research areas, such as reward modeling, algorithmic reasoning, and formal mathematics. We hope that by providing researchers with a much stronger base model for reasoning applications, Llemma will accelerate progress on these problems.
