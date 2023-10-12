@@ -11,11 +11,11 @@
 <!-- ![put sample model output here]() -->
 
 Today we release *Llemma*: 7 billion and 34 billion parameter language models for mathematics. The Llemma models were initialized with Code Llama weights, then trained on the Proof-Pile II, a 55 billion token dataset of mathematical and scientific documents.
-The resulting models show improved mathematical capabilities, and can adapt to a variety of tasks by prompting the model with examples or additional finetuning.
+The resulting models show improved mathematical capabilities, and can be adapted to various tasks through prompting or additional fine-tuning.
 
 <img src="./llemma_diagram.jpeg" width="60%"/>
 
-Llemma models achieve strong performance on benchmarks that test a model's ability to solve mathematical problems without using external tools. 
+Llemma models show strong performance on benchmarks that test a model's ability to solve mathematical problems without external tools. 
 For example, here is a Llemma 34B solution to a MATH benchmark problem:
 
 <img src="./llemma_output.png" width="50%"/>
