@@ -1,7 +1,7 @@
 #   Llemma: An Open Language Model For Mathematics
 
 <p float="left">
-<img src="./llemma_logo.jpg" width="15%"/>
+<!-- <img src="./llemma_logo.jpg" width="15%"/> -->
   
 </p>
 
