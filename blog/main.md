@@ -6,7 +6,7 @@
 </p>
 
 
-
+[Paper](#) | [Weights](https://huggingface.co/EleutherAI/llemma_34b) | [Code](https://github.com/EleutherAI/math-lm) | [Data](https://huggingface.co/datasets/EleutherAI/proof-pile-2)
 
 <!-- ![put sample model output here]() -->
 
