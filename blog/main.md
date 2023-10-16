@@ -1,24 +1,50 @@
-# Llemma: An Open Language Model For Mathematics
+#   Llemma: An Open Language Model For Mathematics
 
-![put sample model output here]()
+<p float="left">
+<!-- <img src="./llemma_logo.jpg" width="15%"/> -->
+  
+</p>
 
-Today we release *Llemma*: 7 billion and 34 billion parameter language models for mathematics. The Llemma models were initialized with Code Llama weights, then trained on the Proof-Pile-2, a 55 billion token dataset of quantitative reasoning documents.
 
-Our work is similar to [Minerva](https://blog.research.google/2022/06/minerva-solving-quantitative-reasoning.html), a model suite specialized for quantitative reasoning developed by Google Research last year. We don't achieve quite the same scale as Minerva, however, we perform better on an equi-parameter basis. Moreover, we make our model and dataset open-access and our code open-source.
 
-Language models with strong quantitative reasoning capabilities are upstream of a number of emerging research areas, such as reward modeling, algorithmic reasoning, and formal mathematics. We hope that by providing researchers with a much stronger base model for reasoning applications, Llemma will accelerate progress on these problems.
 
-Because scale reliably produces better generalist models, specialized models have a short shelf life. However, by open sourcing our dataset and code, we hope they can be reused to turn the future's better open models into quantitative reasoning specialists. 
+<!-- ![put sample model output here]() -->
 
-### Dataset
+Today we release *Llemma*: 7 billion and 34 billion parameter language models for mathematics. The Llemma models were initialized with Code Llama weights, then trained on the Proof-Pile II, a 55 billion token dataset of mathematical and scientific documents.
+The resulting models show improved mathematical capabilities, and can be adapted to various tasks through prompting or additional fine-tuning.
 
-The first step in developing Llemma was to assemble a large, high quality quantitative reasoning dataset. Minerva used 38 billion unique tokens consisting of arXiv and math web pages. Our dataset, the Proof-Pile-2, contains arXiv, web data, and code for a total of 55B unique tokens. 
+<img src="./llemma_diagram.jpeg" width="60%"/>
+
+Llemma models show strong performance on benchmarks that test a model's ability to solve mathematical problems without external tools. 
+For example, here is a Llemma 34B solution to a MATH benchmark problem:
+
+<img src="./llemma_output.png" width="50%"/>
+
+Additionally, we found that Llemma models can use computational tools to solve problems, such as calculators, computer algebra systems, and formal theorem provers—more on this below.
+
+#### Open models, data, and code
+Our work parallels [Minerva](https://blog.research.google/2022/06/minerva-solving-quantitative-reasoning.html), a model suite specialized for quantitative reasoning developed by Google Research last year. While we don't achieve quite the same scale as Minerva, our Llemma models perform better on an equi-parameter basis. Moreover, we make our [models](https://huggingface.co/EleutherAI) and [dataset](https://huggingface.co/EleutherAI) open-access and our [code](https://github.com/EleutherAI/math-lm) open-source.
+
+Language models with strong mathematical reasoning capabilities are upstream of a number of emerging research areas, such as reward modeling, algorithmic reasoning, and formal mathematics. We hope that by providing researchers with a much stronger base model for reasoning applications, Llemma will accelerate progress on these problems.
+
+Because scale reliably produces better generalist models, specialized models often have a short shelf life. By making our dataset and code available, we hope that Llemma's training recipe can be reused to improve the mathematical capabilities of future, stronger open models. 
+
+
+
+### Dataset : Proof-Pile II
+
+<img src="./proofpile_logo.jpg" width="20%"/>
+
+
+The first step in developing Llemma was to assemble a large, high-quality dataset of mathematical and scientific content. Minerva used 38 billion unique tokens consisting of arXiv and math web pages. Our dataset, the Proof-Pile II, contains arXiv, web data, and code for a total of 55B unique tokens. 
+
+<img src="./dataset.png" width="35%"/>
 
 For the arXiv portion of the Proof-Pile-2, we use the RedPajama arXiv subset. Our web and code subsets, on the other hand, are new. We describe them below.
 
 **Web**. The [OpenWebMath](https://huggingface.co/datasets/open-web-math/open-web-math) dataset, a recent 14.7 billion token dataset of mathematical web pages, is a sister project to Llemma. OpenWebMath was created by building a complete CommonCrawl processing pipeline, including HTML extraction, classifier-based filtering, and deduplication steps. 
 
-**Code**. The modern mathematician increasingly relies on computational tools, from offloading difficult calculations to programs, to using software to verify proofs. Motivated by these applications, the Proof-Pile-2 includes 10 billion tokens of mathematical code, spanning numerical computing, computer algebra, and formal theorem proving. This training data allows for some interesting evaluations—more on this later. 
+**Code**. The modern mathematician increasingly relies on computational tools, from offloading difficult calculations to programs, to using software to verify proofs. Motivated by these applications, the Proof-Pile-2 includes 11 billion tokens of mathematical code, spanning numerical computing, computer algebra, and formal theorem proving. This training data allows for some interesting evaluations—more on this later. 
 
 ### Training
 We trained Llemma 7B for 200B tokens and Llemma 34B for 50B tokens. This amounts to 23,000 A100 hours for Llemma 7B and 47,000 A100 hours for the 34B. Our training stack is built on a number of fantastic open source projects, including [GPT-NeoX](https://github.com/EleutherAI/gpt-neox/tree/llemma) and [FlashAttention-2](https://github.com/Dao-AILab/flash-attention). 
@@ -26,7 +52,7 @@ We trained Llemma 7B for 200B tokens and Llemma 34B for 50B tokens. This amounts
 ### Evaluation
 Our first evaluation setting is chain-of-thought mathematical reasoning, measured by benchmarks such as MATH and GSM8k. This is a setting where open source base models have lagged: Llama-2 and Code Llama's MATH scores are in the mid-single digits. Llemma achieves a significant improvement on these tasks, and even surpasses Minerva when controlled for model parameters. 
 
-![Put the chart from the first page of the paper here, and a gsm8k version]()
+<img src="./plot.png" width="37%"/>
 
 The code subset of the Proof-Pile-2 endows Llemma with capabilities Minerva lacks without additional finetuning. In this blog post, we'll discuss *formal theorem proving*. Our paper contains additional results on a Python-aided problem solving task. 
 
@@ -49,7 +75,7 @@ Language model evaluations are partly a memorization test and partly a generaliz
 
 <img src="memorization.png" width="50%">
 
-We encourage other researchers to reproduce our analysis and investigate more reliable methods for detecting memorization. 
+We [open-source the tools](https://github.com/wellecks/overlap) we used for our analysis, and encourage other researchers to investigate other ways to detect and quantify the effects of memorization. 
 
 ### Future directions 
 Llemma is a pretrained base model; therefore, our evaluations are only a starting point for further research into the mathematical abilities of language models. To conclude, we note a few promising directions that Llemma might enable. 
