@@ -2,6 +2,7 @@
 
 <img src="./llemma.jpg" width="50%"/>
   
+[ArXiv](#) | [Models](https://huggingface.co/EleutherAI/llemma_34b) | [Data](https://huggingface.co/datasets/EleutherAI/proof-pile-2) | [Code](https://github.com/EleutherAI/math-lm) | [Blog](#) | [Sample Explorer](https://keirp.com/llemma-sample-explorer/)
 
 Repository for [Llemma: an open language model for mathematics [Azerbayev et al 2023]]().
 
