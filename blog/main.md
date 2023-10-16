@@ -58,7 +58,7 @@ Our first evaluation setting is chain-of-thought mathematical reasoning, measure
 
 Majority voting provides a further boost for Llemma, with Llemma 34B's MATH maj@256 score almost matching Minerva 62B.
 
-<img src="./plot_majk.png" wdith="37%"/>
+<img src="./plot_majk.png" width="37%"/>
 
 The code subset of the Proof-Pile-2 endows Llemma with capabilities Minerva lacks without additional finetuning. In this blog post, we'll discuss *formal theorem proving*. Our paper contains additional results on a Python-aided problem solving task. 
 
