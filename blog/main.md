@@ -88,6 +88,6 @@ Llemma is a pretrained base model; therefore, our evaluations are only a startin
 
 **Reward modeling and reinforcement learning**. [Recent work by OpenAI](https://arxiv.org/abs/2305.20050) demonstrates the effectiveness of guiding mathematical problem solving with a reward model. How can we improve upon this approach?
 
-**Formal theorem proving**. Our in-context learning evaluations are minimal working examples of formal theorem proving with Llemma. What is possible with some finetuning and better algorithms? Can Llemma models tackle the [IMO Grand Challenge](https://arxiv.org/abs/2305.20050)? 
+**Formal theorem proving**. Our in-context learning evaluations are minimal working examples of formal theorem proving with Llemma. What is possible with [some finetuning](https://arxiv.org/abs/2303.04910) and [better algorithms](https://arxiv.org/abs/2202.01344)? Can Llemma models tackle the [IMO Grand Challenge](https://arxiv.org/abs/2305.20050)? 
 
 **Algorithmic Reasoning**. With very careful prompting, language models can [learn to execute algorithms](https://arxiv.org/abs/2211.09066). What would it take to elicit algorithmic reasoning from Llemma more flexibly and reliably?
