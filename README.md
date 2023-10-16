@@ -19,9 +19,10 @@ Additional evaluation code is in a [fork of the Eleuther LM Evaluation Harness](
 This repository contains the following directories
 - `proof_pile_2`: scripts for downloading and preprocessing data.
 - `gpt-neox`: git submodule containing a modified branch of `EleutherAI/gpt-neox`
-- `finetunes`: git submodule containing scripts for the fine-tuning experiments
+- `lm-evaluation-harness`: code for all evaluations, except formal2formal theorem proving.
 - `llemma_formal2formal`: git submodule containing scripts for the formal2formal experiments
 - `overlap`: git submodule containing the overlap and memorization analysis 
+- `finetunes`: git submodule containing scripts for the fine-tuning experiments
 
 Because this project contains submodules, you should clone this project with the `--recurse-submodules` flag or, alternatively, run `git submodule update --init --recursive` from within the project directory after cloning the project. After running `git pull`, you should also run `git submodule update`.
 
