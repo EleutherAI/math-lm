@@ -1,5 +1,7 @@
 # `Llemma`: an open language model for mathematics
 
+<img src="./llemma.jpg" width="50%"/>
+  
 
 Repository for [Llemma: an open language model for mathematics [Azerbayev et al 2023]]().
 
