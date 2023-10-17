@@ -2,7 +2,7 @@
 
 <img src="./llemma.jpg" width="50%"/>
   
-[ArXiv](#) | [Models](https://huggingface.co/EleutherAI/llemma_34b) | [Data](https://huggingface.co/datasets/EleutherAI/proof-pile-2) | [Code](https://github.com/EleutherAI/math-lm) | [Blog](#) | [Sample Explorer](https://keirp.com/llemma-sample-explorer/)
+[ArXiv](http://arxiv.org/abs/2310.10631) | [Models](https://huggingface.co/EleutherAI/llemma_34b) | [Data](https://huggingface.co/datasets/EleutherAI/proof-pile-2) | [Code](https://github.com/EleutherAI/math-lm) | [Blog](https://blog.eleuther.ai/llemma/) | [Sample Explorer](https://llemma-demo.github.io/)
 
 Repository for [Llemma: an open language model for mathematics [Azerbayev et al 2023]]().
 
@@ -32,11 +32,12 @@ Because this project contains submodules, you should clone this project with the
 ## Citation
 Please cite the following:
 ```
-@article{azerbayev2023llemma,
-    title={Llemma: an open language model for mathematics},
-    author={Zhangir Azerbayev and Hailey Schoelkopf and Keiran Paster and Marco Dos Santos and Stephen McAleer and Albert Q. Jiang and Jia Deng and Stella Biderman and Sean Welleck},
-    eprint={xyz.xyz},
-    archivePrefix={arXiv}
-    year={2023}
+@misc{azerbayev2023llemma,
+      title={Llemma: An Open Language Model For Mathematics}, 
+      author={Zhangir Azerbayev and Hailey Schoelkopf and Keiran Paster and Marco Dos Santos and Stephen McAleer and Albert Q. Jiang and Jia Deng and Stella Biderman and Sean Welleck},
+      year={2023},
+      eprint={2310.10631},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
 }
 ```
