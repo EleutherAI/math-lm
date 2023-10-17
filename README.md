@@ -4,7 +4,7 @@
   
 [ArXiv](http://arxiv.org/abs/2310.10631) | [Models](https://huggingface.co/EleutherAI/llemma_34b) | [Data](https://huggingface.co/datasets/EleutherAI/proof-pile-2) | [Code](https://github.com/EleutherAI/math-lm) | [Blog](https://blog.eleuther.ai/llemma/) | [Sample Explorer](https://llemma-demo.github.io/)
 
-Repository for [Llemma: an open language model for mathematics [Azerbayev et al 2023]]().
+Repository for [Llemma: an open language model for mathematics [Azerbayev et al 2023]](https://arxiv.org/abs/2310.10631).
 
 This repository hosts data and training code related to the following artifacts:
 
@@ -32,12 +32,28 @@ Because this project contains submodules, you should clone this project with the
 ## Citation
 Please cite the following:
 ```
-@misc{azerbayev2023llemma,
-      title={Llemma: An Open Language Model For Mathematics}, 
-      author={Zhangir Azerbayev and Hailey Schoelkopf and Keiran Paster and Marco Dos Santos and Stephen McAleer and Albert Q. Jiang and Jia Deng and Stella Biderman and Sean Welleck},
-      year={2023},
-      eprint={2310.10631},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL}
+@article{azerbayev2023llemma,
+  title={Llemma: An Open Language Model For Mathematics}, 
+  author={Azerbayev, Zhangir and Schoelkopf, Hailey and Paster, Keiran and Dos Santos, Marco and McAleer, Stephen and Jiang, Albert Q. and Deng, Jia and Biderman, Stella and Welleck, Sean},
+  journal={arXiv preprint arXiv:2310.06786},
+  year={2023}
+}
+```
+
+You may also be interested in citing our training data, which is a mix of novel data and data from the following sources:
+```
+@article{paster2023openwebmath,
+  title={OpenWebMath: An Open Dataset of High-Quality Mathematical Web Text},
+  author={Paster, Keiran and Santos, Marco Dos and Azerbayev, Zhangir and Ba, Jimmy},
+  journal={arXiv preprint arXiv:2310.06786},
+  year={2023}
+}
+
+@software{together2023redpajama,
+  author = {Together Computer},
+  title = {RedPajama: An Open Source Recipe to Reproduce LLaMA training dataset},
+  month = April,
+  year = 2023,
+  url = {https://github.com/togethercomputer/RedPajama-Data}
 }
 ```
