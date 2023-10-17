@@ -56,4 +56,13 @@ You may also be interested in citing our training data, which is a mix of novel 
   year = 2023,
   url = {https://github.com/togethercomputer/RedPajama-Data}
 }
+
+@misc{kocetkov2022stack,
+      title={The Stack: 3 TB of permissively licensed source code}, 
+      author={Denis Kocetkov and Raymond Li and Loubna Ben Allal and Jia Li and Chenghao Mou and Carlos Muñoz Ferrandis and Yacine Jernite and Margaret Mitchell and Sean Hughes and Thomas Wolf and Dzmitry Bahdanau and Leandro von Werra and Harm de Vries},
+      year={2022},
+      eprint={2211.15533},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
 ```
