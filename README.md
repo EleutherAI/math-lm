@@ -12,8 +12,8 @@ This repository hosts data and training code related to the following artifacts:
 | ---------- | ------------------ | 
 | **Llemma 7b** |[`EleutherAI/llemma_7b`](https://huggingface.co/EleutherAI/llemma_7b)  | 
 | **Llemma 34b** |[`EleutherAI/llemma_34b`](https://huggingface.co/EleutherAI/llemma_34b)  | 
-| **Proof-Pile-2** |[`EleutherAI/ProofPile2`](https://huggingface.co/EleutherAI/proofpile2)  | 
-| **AlgebraicStack** |[`EleutherAI/AlgebraicStack`](https://huggingface.co/EleutherAI/AlgebraicStack)  | 
+| **Proof-Pile-2** |[`EleutherAI/ProofPile2`](https://huggingface.co/datasets/EleutherAI/proof-pile-2)  | 
+| **AlgebraicStack** |[`EleutherAI/AlgebraicStack`](https://huggingface.co/datasets/EleutherAI/proof-pile-2/tree/main/algebraic-stack)  | 
 
 This repository also contains submodules related to the overlap, fine-tuning, and theorem proving experiments described in the paper.
 Additional evaluation code is in a [fork of the Eleuther LM Evaluation Harness](https://github.com/wellecks/lm-evaluation-harness).
