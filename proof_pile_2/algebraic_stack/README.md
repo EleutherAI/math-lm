@@ -5,7 +5,7 @@ The following contains instructions for reproducing the AlgebraicStack.
 ## Source Code
 By far the largest source of tokens in the AlgebraicStack is the source code dataset, which is partially filtered from [the Stack](https://huggingface.co/datasets/bigcode/the-stack-dedup) and partially downloaded directly from Github. 
 
-Note that the Stack is a gated Huggingface dataset, therefore your `HUGGING_FACE_TOKEN` environment variable must contain an access key that has permission to access the Stack. Moreover, setting the `GITHUB_ACCESS_TOKEN` environment variable to your Github access token will make the Github download significantly faster.
+Note that the Stack is a gated Hugging Face dataset, therefore your `HUGGING_FACE_TOKEN` environment variable must contain an access key that has permission to access the Stack. Moreover, setting the `GITHUB_ACCESS_TOKEN` environment variable to your Github access token will make the Github download significantly faster.
 
 To reproduce the source code portion of the AlgebraicStack, run
 ```
