@@ -6,7 +6,6 @@ nbformat==5.9.0
 ndjson==0.3.1
 numpy==1.22.3
 py7zr==0.20.5
-PyGithub==1.58.2
 PyGithub==1.59.0
 PyYAML==6.0
 PyYAML==6.0
