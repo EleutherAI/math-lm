@@ -31,3 +31,12 @@ python filter_by_human.py \
     --destpath $SAVE_DESTINATION \
     --judgement_file $PATH_TO_SAVED_JUDGEMENTS
 ```
+The following are criteria for the answers of accepted examples.
+```
+1. Answers should directly address the question. There should be minimal tangents and digressions.
+2. Answers should be written in high quality English prose.
+3. Answers should be valid markdown. 
+4. Answers should not reference other answers or comments, and should not include personal details about the author (e.g "I published a paper that shows the solution is...").
+5. Answers should not contain URLs. References to well-known papers and textbooks are fine.
+```
+Note that since we are only supervising on the answer and not the question, having some poor quality questions is fine, and long as the answer is a strong response to the question.
