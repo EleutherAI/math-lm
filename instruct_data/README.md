@@ -27,7 +27,7 @@ python filter_for_score.py \
 Open the notebook `data_viewer.ipynb`. It contains an example of how to use the `nbviewer`-based data filtering UI. The UI will show you one QA example at a time, which you can accept or reject. Acceptances and rejections made in the UI are synced with a yaml file. To filter the data jsonl to just those accepted by the human using the UI, run
 ```
 python filter_by_human.py \
-    --inputpath $FILTERE_DATA \
+    --inputpath $FILTERED_DATA \
     --destpath $SAVE_DESTINATION \
     --judgement_file $PATH_TO_SAVED_JUDGEMENTS
 ```
