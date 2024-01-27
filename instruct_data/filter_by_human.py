@@ -7,7 +7,6 @@ def filter_by_human(inputpath: str, destpath: str, judgement_file:str):
         judgement_of_id = yaml.safe_load(fle)
     
     good_ids = set([k for k,v in judgement_of_id.items() if v])
-    print(good_ids)
 
     with open(inputpath) as fle:
         pre_data = [json.loads(x) for x in fle]
