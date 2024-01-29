@@ -36,7 +36,9 @@ The following are criteria for the answers of accepted examples.
 1. Answers should directly address the question. There should be minimal tangents and digressions.
 2. Answers should be written in high quality English prose.
 3. Answers should be valid markdown. 
-4. Answers should not reference other answers or comments, and should not include personal details about the author (e.g "I published a paper that shows the solution is...").
-5. Answers should not contain URLs. References to well-known papers and textbooks are fine.
+4. Answers should not reference other answers or comments (e.g to elaborate on @user3413's answer...), and should not include personal details about the author (e.g "I published a paper that shows the solution is...").
+5. Answers should be complete, e.g "the rest of the argument is an exercise left to the reader" is disallowed.
+6. Answers should not contain URLs. References to well-known papers and textbooks are fine.
+7. If information from the question required to deduce the answer was lost or corrupted (e.g the question references a missing image, and that image is necessary to answer the question), exclude that answer.
 ```
 Note that since we are only supervising on the answer and not the question, having some poor quality questions is fine, and long as the answer is a strong response to the question.
