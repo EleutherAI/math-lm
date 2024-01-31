@@ -1,5 +1,7 @@
 # Instruction Tuning Data
 
+Currently out of date. TODO: update
+
 This directory contains scripts for creating an instruction tuning dataset made up of highly-rated stack exchange answers. This process is composed of three steps:
 1. Download and preprocess stack exchange answers from the internet archive XML dump.
 2. Filter for highly rated answers.
