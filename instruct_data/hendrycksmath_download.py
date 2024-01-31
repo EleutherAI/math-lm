@@ -23,11 +23,13 @@ def fix_align(text):
     return text
 
 def convert_latex(text):
+    text = re.sub(r'\$\$\$\$', r'$$\n$$', text)
+
+    text = re.sub(r'\$\$(.*?)\$\$', '\n$$\n\t\\1\n$$\n', text)
+
     text = re.sub(r'\\\[\s*(.*?)\s*\\\]', '\n$$\n\t\\1\n$$\n', text, flags=re.DOTALL)
 
     text = re.sub(r'\\\((.*?)\\\)', r'$\1$', text, flags=re.DOTALL)
-
-    text = re.sub(r'\$\$\$\$', r'$$\n$$', text)
 
     return text
 
@@ -39,6 +41,10 @@ def blacklist(x):
     elif "eqnarray" in x["solution"]:
         return True
     elif "tabular" in x["solution"]:
+        return True
+    elif "begin{array}" in x["solution"]:
+        return True
+    elif "\\emph" in x["solution"]:
         return True
     else:
         return False
@@ -59,7 +65,7 @@ def download(destpath):
     for k,v in LEVEL_COUNTS.items():
         level_data = [x for x in data if x['meta']['level']==k]
         data_by_level[k] = random.sample(level_data, v)
-    
+ 
     post_data = [x for k,v in data_by_level.items() for x in v]
 
     with open(destpath, "w") as f:
