@@ -6,6 +6,8 @@ import re
 import argparse
 import textwrap
 
+import sentencepiece as spm
+
 import code
 
 def wrap_isabelle_comment(text, width=80):
@@ -71,7 +73,7 @@ def extract_filename(filepath):
 
     return theory + "/" + filename + ".thy"
 
-def consolidate_by_file(data):
+def consolidate_by_file(data, sp):
     row_of_file = dict()
 
     for row in tqdm(data):
@@ -86,8 +88,9 @@ def consolidate_by_file(data):
         v = row_of_file[k]
         # code.interact(local=locals())
         text = "\n\n".join([x["text"] for x in v])
+        num_tokens = len(sp.encode(text))
         consolidated_data.append(
-            {"text": text, "meta": {"file": v[0]["meta"]["file"]}}
+            {"text": text, "meta": {"file": v[0]["meta"]["file"], "tokens": num_tokens}}
             )
 
     return consolidated_data
@@ -151,13 +154,18 @@ if __name__ == '__main__':
     parser.add_argument("--test_folder", help="Path to the PISA test set folder")
     parser.add_argument("--results_file", default='pisa_dataset.jsonl', help="Path to the results file")
     parser.add_argument("--max_items", default=None, type=int, help="Maximum jsons to process")
+    parser.add_argument("--tokenizer_model", type=str, help="sentencepiece model")
     args = parser.parse_args()
 
     test_set = get_theorem_statements_from_folder(args.test_folder)
     afp_dataset_decontaminated = create_dataset(args.afp_folder, test_set, max_items=args.max_items)
     # std_dataset_decontaminated = create_dataset(args.std_folder, test_set)
 
-    afp_dataset_decontaminated = consolidate_by_file(afp_dataset_decontaminated)
+    sp = spm.SentencePieceProcessor(model_file=args.tokenizer_model)
+
+    afp_dataset_decontaminated = consolidate_by_file(afp_dataset_decontaminated, sp)
+
+    num_tokens = sum(x["meta"]["tokens"] for x in afp_dataset_decontaminated)
 
     with open(args.results_file, "w") as file:
         for data in tqdm(afp_dataset_decontaminated):
@@ -166,3 +174,5 @@ if __name__ == '__main__':
         # for data in tqdm(std_dataset_decontaminated):
         #     json_str = json.dumps(data)
         #     file.write(json_str + "\n")
+
+    print(f"NUM TOKENS: {num_tokens}")
