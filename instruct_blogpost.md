@@ -1,5 +1,5 @@
 # Scaling Instruction Tuning for Math
-<span style="color: red;">General comments: the biggest problem with the experiments right now is that data quantity, data quality, and data diversity are all being scaled together. This is poor experimental design. It's fine to drop data quality as data quantity increases as this simulates a realistic tradeoff. However, data diversity should be a separate dimension of scaling. For my next draft, I will incorporate this change. Hopefully it will make the experiments more informative and my arguments slightly less sophistic.</span>
+*General comments: the biggest problem with the experiments right now is that data quantity, data quality, and data diversity are all being scaled together. This is poor experimental design. It's fine to drop data quality as data quantity increases as this simulates a realistic tradeoff. However, data diversity should be a separate dimension of scaling. For my next draft, I will incorporate this change. Hopefully it will make the experiments more informative and my arguments slightly less sophistic.*
 ## Introduction
 In this post, we seek to quantify the tradeoff between dataset size, quality, and diversity when instruction finetuning language models for math. 
 
@@ -21,7 +21,7 @@ Why is the language model so unhelpful? Well, really, there is no reason to supp
 
 One way we could try to elicit more helpful behavior from the language model is by *prompting*. Let's try to write a prompt that explicitly describes the characteristics we want from the model, as well as gives examples of interactions.
 
-<span style="color: red;">I need to make this example shorter.</span>
+*I need to make this example shorter.*
 ```
 Below are a series of dialogues between various people and an AI mathematical assistant. The AI tries to be helpful, concise, honest, sophisticated, and humble-but-knowledgeable. The assistant always writes their responses in readable Markdown LaTeX. 
 
@@ -51,13 +51,13 @@ almost entirely during pretraining, while alignment teaches it which subdistribu
 be used when interacting with users. If this hypothesis is correct, and alignment is largely about
 learning style, then a corollary of the Superficial Alignment Hypothesis is that one could sufficiently tune a pretrained language model with a rather small set of examples
 
-<span style="color: red;">I really dislike the name superficial alignment hypothesis, because alignment denotes a lot more than instruction following. Need to find a polite way to indicate this and use some other name</span>
+*I really dislike the name superficial alignment hypothesis, because alignment denotes a lot more than instruction following. Need to find a polite way to indicate this and use some other name*
 
 This hypothesis is plausible due to the compute differential between pretraining and finetuning, which is almost always more than two orders of magnitude. The LIMA model is able to achieve competitive instruction following with only 1000 finetuning examples. Prior works such as FLAN have used hundreds of thousands of examples. 
 
 In this post, we wish to investigate the implications of practical tradeoffs faced when collecting instruction data. As you scale the size of your instruction tuning dataset, two things will tend to happen:
 1. The average quality of your training examples will go down. If you are scraping instruction data from the web, it will be noisy: filtering the dataset will require a human-in-the-loop.  Given a fixed budget of man-hours for data work, you can only get a larger dataset by filtering less strictly. If you are working with crowdworkers, a fixed budget can get you a few expensive datapoints or many cheaper ones.
-2. The specificity of your training examples will go down. In our experiments, we focus on instruction tuning for math. Clearly, the less related to mathematics we demand our data to be, the more we will be able to find.  <span style="color: red">Again, this should be a separate dimension of scaling from data quantity</span>
+2. The specificity of your training examples will go down. In our experiments, we focus on instruction tuning for math. Clearly, the less related to mathematics we demand our data to be, the more we will be able to find.  *Again, this should be a separate dimension of scaling from data quantity*
 
 We train Llemma 7B on three instruction datasets, all reflecting different points on this tradeoff. These datasets are detailed in the next section.
 
@@ -84,7 +84,7 @@ Additionally, we evaluate a zero-shot baseline with a simple 10 token prompt and
 Contrary to the superficial alignment hypothesis, it appears that there are substantial gains from instruction tuning on large datasets, with the instruction tuned model trained on the most data approaching the quality of 512 tokens worth of task-specific in-context learning. At least in this setting, it appears that large amounts of instruction tuning data are beneficial for eliciting reasoning ability, even though much of the data our best model was finetuned on has nothing to do with reasoning. 
 
 ## Conclusion
-<span style="color: red;">This argument is a little weak right now because the current experiments can't distinguish between the effect of data diversity and the effect of data quality.</span>
+*This argument is a little weak right now because the current experiments can't distinguish between the effect of data diversity and the effect of data quality.*
 
 The above results are a counterintuitive picture, especially if your intuitions come from before the era of large-scale deep learning. It is simultaneously true that
 
