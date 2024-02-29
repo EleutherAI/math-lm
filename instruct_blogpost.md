@@ -27,8 +27,8 @@ Our experimental results are below.
 
 <img src="assets/results2.png" alt="alt text" width="600" height="450"/>
 
-Our results do not appear to be consistent with the SAH. Most notably, we are only able to recover the performance of few-shot prompted by Llemma by training on camel math, which has lower data quality than μInstruct but makes up for it with greater quantity. 
+Our results do not appear to be consistent with the SAH. Most notably, we are only able to recover the performance of few-shot prompted by Llemma by training on datasets with at least 50k instructions. 
 
-Furthermore, these results illustrate the potential dangers of finetuning. Unless finetuning is done very carefully with a well-optimized data mixture, the finetuned model may perform much worse than the few-shot baseline. It is also worth noting that although `MetaMath-Llemma 7B` beats `Llemma 7B` by a large margin on MATH, the MetaMath model is weaker on Hungarian math. This result suggests the MetaMath model is highly specialized towards the MATH problem distribution and has weaker general problem-solving ability than its MATH score would suggest. 
+Furthermore, these results illustrate the potential dangers of finetuning. Unless finetuning is done very carefully with a sufficiently large dataset and a well-optimized data mixture, the finetuned model may perform much worse than the few-shot baseline. It is also worth noting that although `MetaMath-Llemma 7B` beats `Llemma 7B` by a large margin on MATH, the MetaMath finetuning doesn't yield an advantage on Hungarian math. This result suggests the MetaMath model is highly specialized towards the MATH problem distribution and has weaker general problem-solving ability than its MATH score would suggest. 
 
 The most important limitation of our findings is that `Llemma 7B` is a small model by 2024 standards, and larger models are both more sample efficient and have greater reasoning capabilities that may be harmed by poor quality data. Both of these factors would suggest small high-quality datasets work better for larger models. 
