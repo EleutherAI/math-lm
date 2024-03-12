@@ -35,6 +35,6 @@ The most important limitation of our findings is that `Llemma 7B` is a small mod
 
 ## Open Source
 
-The [μInstruct](https://huggingface.co/datasets/EleutherAI/muInstruct) dataset and [`llemma_7b_muinstruct_camel`](https://huggingface.co/EleutherAI/llemma_7b_muinstruct_camelmath) model are open-source. 
+The [μInstruct](https://huggingface.co/datasets/EleutherAI/muInstruct) dataset and [`llemma_7b_muinstruct_camelmath`](https://huggingface.co/EleutherAI/llemma_7b_muinstruct_camelmath) model are open-source. 
 
 [^1]: The LIMA authors use "alignment" to mean "ability to follow user instructions". I dislike this usage, as the word "alignment" typically denotes something that is in many circumstances contradictory to the LIMA author's usage. See, for example, [The alignment problem from a deep learning perspective](https://arxiv.org/abs/2209.00626). Nonetheless, I will defer to the LIMA author's terminology of "superficial alignment hypothesis", usually abbreviating it as SAH. 
