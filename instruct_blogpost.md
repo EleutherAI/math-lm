@@ -10,7 +10,7 @@ Clearly, a larger dataset that is identically distributed to μInstruct would yi
 1. Using lower quality data, which is cheaper to collect. 
 2. Using data less targeted towards the model's use case. Although this more general instruction data does not come from the exact distribution we want to model, it still may enforce helpful biases such as directly addressing the user's request, staying on topic, and reasoning in a chain-of-thought style. 
 
-To reflect these practical constraints, our experiments test the SAH by combining μInstruct with either lower quality mathematics data, or data from high-quality instruction datasets that is not necessarily related to mathematics. 
+To reflect these practical constraints, our experiments test the SAH by combining μInstruct with either lower quality mathematics data, or data that is high quality but not necessarily related to mathematics.
 
 ## Data
 The μInstruct dataset was created from an initial pool of around 1900 highly-rated stack exchange answers, around 650 questions from the Khan Academy subset of the [AMPS](https://github.com/hendrycks/math) dataset, and around 550 questions from the [MATH](https://github.com/hendrycks/math) training set. Because the Khan Academy questions often had formatting issues, they were rewritten into valid markdown $\LaTeX{}$ by `gpt-3.5-turbo`. After this preprocessing, the initial 3,100 instructions were manually filtered down to around 1600 instructions. The μInstruct dataset contains a mix of straightforward school-level problems, some quite challenging problems, and a number of open-ended or soft questions. 
