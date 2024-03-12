@@ -21,7 +21,7 @@ To stand in for a lower quality but larger math dataset than μInstruct, we use 
 
 We conduct instruction tuning experiments at three data scales: 1600 instructions, 50k instructions and 1M instructions. For the 1600 instruction case, we train solely on μInstruct: this configuration reflects the superficial alignment philosophy. At 50k instructions, we train one model on a μInstruct + Camel mix and another on a μInstruct + OpenHermes mix. Finally, our only run at the 1M scale is a mixture of μInstruct and OpenHermes. 
 
-We evaluate on the [Hungarian National Math Exam](https://huggingface.co/datasets/keirp/hungarian_national_hs_finals_exam), a "real-life" test of high-school math ability. We compare our instruction tuned models to zero-shot `Llemma 7B`, few-shot `Llemma 7B`, and `MetaMath-Llemma-7B`, a finetune of `Llemma 7B` trained on a data-augmented version of the MATH and GSM8k training sets. 
+As our test set, we use the [Hungarian National Math Exam](https://huggingface.co/datasets/keirp/hungarian_national_hs_finals_exam), a "real-life" measure of high-school math ability. We compare our instruction tuned models to zero-shot `Llemma 7B`, few-shot `Llemma 7B`, and `MetaMath-Llemma-7B`, a finetune of `Llemma 7B` trained on a data-augmented version of the MATH and GSM8k training sets. 
 
 Our experimental results are below. 
 
